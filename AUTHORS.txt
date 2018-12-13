@@ -1,0 +1,8 @@
+(* OASIS_START *)
+(* DO NOT EDIT (digest: 168077602ccd823bc9c56116e054f743) *)
+
+Authors of SAT:
+
+* Tomoya Kashifuku
+
+(* OASIS_STOP *)

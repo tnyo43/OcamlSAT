@@ -1,0 +1,26 @@
+OASISFormat: 0.4
+NAME: SAT
+Version: 0.1.0
+Synopsis: SAT solver
+Authors: Tomoya Kashifuku
+License: MIT
+Plugins: META (0.4), StdFiles (0.4), DevFiles (0.4)
+BuildTools: ocamlbuild
+
+Library dpll
+  Path: src/dpll
+  Modules: Dpll
+
+Executable test
+  Path: tests
+  MainIs: test.ml
+  Build$: flag(tests)
+  CompiledObject: native
+  Install: false
+  BuildDepends: oUnit, dpll
+
+Test test
+  Run$: flag(tests)
+  Command: $test
+  WorkingDirectory: tests
+
