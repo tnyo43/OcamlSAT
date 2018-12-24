@@ -29,10 +29,33 @@ let next_assign_list_test =
     )
 ;;
 
+
+let solve_sat_test =
+  "SATのテスト。成功すると割り当てのリストを返し、失敗するとUnsatになる" >::
+    (fun _ ->
+      assert_equal [("a", false); ("b", true); ("c", true); ("d", false)] (solve [[P "a"; P "b"]; [N "a"; N "b"]; [P "c"; P "d"]; [P "c"; N "d"]]);
+      assert_equal
+        [("a", true); ("b", true); ("c", true); ("d", true)]
+        (solve [
+          [N "a"; P "b"; P "c"];
+          [P "a"; P "c"; P "d"];
+          [P "a"; P "c"; N "d"];
+          [P "a"; N "c"; P "d"];
+          [P "a"; N "c"; N "d"];
+          [N "b"; N "c"; P "d"];
+          [N "a"; P "b"; N "c"];
+          [N "a"; N "b"; P "c"];
+          [P "a"; P "c"]
+        ]);
+      assert_raises (Unsat) (fun _ -> solve [[N "a"]; [P "a"]])
+    )
+;;
+
 let tests =
   "all_tests" >::: [
     update_clause_test;
     apply_assign_test;
     next_assign_list_test;
+    solve_sat_test;
   ]
 ;;
