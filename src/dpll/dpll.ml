@@ -8,6 +8,7 @@ type alphabets = string list;;
 
 exception Satisfied;;
 exception Unsat;;
+exception Sat of assign list;;
 
 let get_variable lit =
   match lit with
@@ -37,8 +38,9 @@ let update_clause cla s b =
   with | Satisfied -> []
 ;;
 
-let apply_assign cnf1 asgn =
+let apply_assign cnf1 asgn asgns =
   let (s, b) = asgn in
-  List.filter (fun cla -> List.length cla > 0) @@ List.map (fun cla -> update_clause cla s b) cnf1
+  let res = List.filter (fun cla -> List.length cla > 0) @@ List.map (fun cla -> update_clause cla s b) cnf1 in
+  if res = [] then raise (Sat (asgn :: asgns))
+  else res
 ;;
-
