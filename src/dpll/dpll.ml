@@ -6,6 +6,8 @@ type cnf = clause list;;
 
 type alphabets = string list;;
 
+module SS = Set.Make(String);;
+
 exception Satisfied;;
 exception Unsat;;
 exception Sat of assign list;;
@@ -48,6 +50,6 @@ let apply_assign cnf1 asgn asgns =
 let next_assign_list sorted_cnf alphs =
   if List.length @@ List.hd sorted_cnf = 1 then
     let lit = List.hd @@ List.hd sorted_cnf in
-    [(get_variable lit, get_state lit)]
-  else [(List.hd alphs, false); (List.hd alphs, true)]
+    (get_variable lit, [(get_variable lit, get_state lit)])
+  else (List.hd alphs, [(List.hd alphs, false); (List.hd alphs, true)])
 ;;
