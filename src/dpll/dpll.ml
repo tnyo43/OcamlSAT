@@ -44,3 +44,10 @@ let apply_assign cnf1 asgn asgns =
   if res = [] then raise (Sat (asgn :: asgns))
   else res
 ;;
+
+let next_assign_list sorted_cnf alphs =
+  if List.length @@ List.hd sorted_cnf = 1 then
+    let lit = List.hd @@ List.hd sorted_cnf in
+    [(get_variable lit, get_state lit)]
+  else [(List.hd alphs, false); (List.hd alphs, true)]
+;;

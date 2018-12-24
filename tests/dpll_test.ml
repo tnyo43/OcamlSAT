@@ -21,9 +21,18 @@ let apply_assign_test =
     )
 ;;
 
+let next_assign_list_test =
+  "単位伝播がある時はそれを次の割り当てとする。そうでない時は最初のアルファベットとする" >::
+    (fun _ ->
+      assert_equal [("b", false)] (next_assign_list [[N "b"]; [N "a"; P "b"]] ["a"; "b"]);
+      assert_equal [("a", false); ("a", true)] (next_assign_list [[P "a"; N "b"]; [N "a"; P "b"]] ["a"; "b"]);
+    )
+;;
+
 let tests =
   "all_tests" >::: [
     update_clause_test;
     apply_assign_test;
+    next_assign_list_test;
   ]
 ;;
