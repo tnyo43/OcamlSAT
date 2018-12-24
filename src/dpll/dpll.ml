@@ -1,6 +1,6 @@
 type assign = string * bool;;
 
-type literal = | P of string | N of string;;
+type literal = | P of string | N of string | U;;
 type clause = literal list;;
 type cnf = clause list;;
 
@@ -13,34 +13,28 @@ let get_variable lit =
   match lit with
   | P s -> s
   | N s -> s
+  | U -> failwith "get variavle from invalid literal"
 ;;
 
 let get_state lit =
   match lit with
   | P _ -> true
   | N _ -> false
+  | U -> failwith "get state from invalid literal"
 ;;
 
 let update_clause cla s b =
-  let rec judge h t k =
-    if s = get_variable h then
-      if b = get_state h then raise Satisfied
-      else k t
-    else update t (fun x -> k (h::x))
-  and update cla k =
-    match cla with
-    | [] -> k []
-    | h::t -> judge h t k
-  in
-  let update_single_clause cla b =
-    let b1 = get_state @@ List.hd cla in
-    if b = b1 then [] else raise Unsat
-  in
-    if List.length cla = 1 && get_variable (List.hd cla) = s
-    then update_single_clause cla b
-    else 
-      try update cla (fun x -> x)
-      with | Satisfied -> []
+  try
+    let cla1 = List.map
+      (fun lit ->
+        if s = get_variable lit then
+          if b = get_state lit then raise Satisfied else U
+        else lit)
+      cla
+    in
+    if cla1 = [U] then raise Unsat
+    else List.filter (fun lit -> not (lit = U)) cla1
+  with | Satisfied -> []
 ;;
 
 let apply_assign cnf1 asgn =
