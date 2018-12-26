@@ -1,7 +1,8 @@
 open OUnit2
 
 let all_tests = "all_tests" >::: [
-  Dpll_test.tests
+  Dpll_test.tests;
+  Sudoku_test.tests;
 ]
 
 let () =

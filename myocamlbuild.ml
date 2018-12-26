@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: c48ed9021fc1c655b05b851e1d47da6f) *)
+(* DO NOT EDIT (digest: ed310a653ea4a8d3cddd0cbd43a99c2f) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -879,10 +879,12 @@ end
 open Ocamlbuild_plugin;;
 let package_default =
   {
-     MyOCamlbuildBase.lib_ocaml = [("dpll", ["src/dpll"], [])];
+     MyOCamlbuildBase.lib_ocaml =
+       [("dpll", ["src/dpll"], []); ("sudoku", ["src/sudoku"], [])];
      lib_c = [];
      flags = [];
-     includes = [("tests", ["src/dpll"])]
+     includes =
+       [("tests", ["src/dpll"; "src/sudoku"]); ("src/sudoku", ["src/dpll"])]
   }
   ;;
 
@@ -890,6 +892,6 @@ let conf = {MyOCamlbuildFindlib.no_automatic_syntax = false}
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default conf package_default;;
 
-# 894 "myocamlbuild.ml"
+# 896 "myocamlbuild.ml"
 (* OASIS_STOP *)
 Ocamlbuild_plugin.dispatch dispatch_default;;

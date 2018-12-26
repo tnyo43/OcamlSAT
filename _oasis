@@ -11,13 +11,18 @@ Library dpll
   Path: src/dpll
   Modules: Dpll
 
+Library sudoku
+  Path: src/sudoku
+  BuildDepends: dpll
+  Modules: Sudoku
+
 Executable test
   Path: tests
   MainIs: test.ml
   Build$: flag(tests)
   CompiledObject: native
   Install: false
-  BuildDepends: oUnit, dpll
+  BuildDepends: oUnit, dpll, sudoku
 
 Test test
   Run$: flag(tests)
