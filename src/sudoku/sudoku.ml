@@ -22,46 +22,39 @@ let update sudoku i j k b cells =
 	SudokuCell.update (cell_and_num_to_alphabet i j k) (fun _ -> Some 0) cells
 ;;
 
-let init_line n =
-	let rec init_line l res =
+let init_sub n f1 f2 =
+	let rec init_sub l res =
 		if l = 0 then res
 		else
-			let rec init_line_1 z res =
+			let rec init_sub_1 z res =
 				if z = 0 then res
 				else
-					init_line_1 (z-1) (List.fold_right
+					init_sub_1 (z-1) (List.fold_right
 						(fun x cnf1 ->
-							(List.map (fun y -> [(cell_and_num_to_alphabet l x y); (cell_and_num_to_alphabet l (x+z) y)]) (range n)) @ cnf1)
+							(List.map (f1 l x z) (range n)) @ cnf1)
 						(range (n-z)) res)
 			in
-			let rec init_line_2 m res =
+			let rec init_sub_2 m res =
 				if m = 0 then res
-				else init_line_2 (m-1) ((List.fold_right (fun n cla -> (cell_and_num_to_alphabet l m n)::cla) (range n) []) :: res)
+				else init_sub_2 (m-1) ((List.fold_right (f2 l m) (range n) []) :: res)
 			in
-			init_line (l-1) @@ init_line_2 n @@ init_line_1 (n-1) res
+			init_sub (l-1) @@ init_sub_2 n @@ init_sub_1 (n-1) res
 	in
-	init_line n []
+	init_sub n []
+;;
+
+let init_line n = 
+	init_sub
+		n
+		(fun l x z -> (fun y -> [(cell_and_num_to_alphabet l x y); (cell_and_num_to_alphabet l (x+z) y)]))
+		(fun l m -> (fun n cla -> (cell_and_num_to_alphabet l m n)::cla))
 ;;
 
 let init_column n =
-	let rec init_column c res =
-		if c = 0 then res
-		else
-			let rec init_column_1 z res =
-				if z = 0 then res
-				else
-					init_column_1 (z-1) (List.fold_right
-						(fun x cnf1 ->
-							(List.map (fun y -> [(cell_and_num_to_alphabet x c y); (cell_and_num_to_alphabet (x+z) c y)]) (range n)) @ cnf1)
-						(range (n-z)) res)
-			in
-			let rec init_column_2 m res =
-				if m = 0 then res
-				else init_column_2 (m-1) ((List.fold_right (fun n cla -> (cell_and_num_to_alphabet m c n)::cla) (range n) []) :: res)
-			in
-			init_column (c-1) @@ init_column_2 n @@ init_column_1 (n-1) res
-	in
-	init_column n []
+	init_sub
+		n
+		(fun c x z -> (fun y -> [(cell_and_num_to_alphabet x c y); (cell_and_num_to_alphabet (x+z) c y)]))
+		(fun c m -> (fun n cla -> (cell_and_num_to_alphabet m c n)::cla))
 ;;
 
 (*
