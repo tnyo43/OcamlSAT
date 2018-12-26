@@ -12,9 +12,9 @@ let cell_and_num_to_alphabet_test =
 let init_line_test =
   "横一列の割り当てを全て作成する" >::
     (fun _ ->
-      assert_equal 96 (List.length @@ List.filter (fun x -> List.length x = 2) @@ init_line 4);
-      assert_equal 16 (List.length @@ List.filter (fun x -> List.length x = 4) @@ init_line 4);
-      assert_equal (96+16) (List.length @@ init_line 4);
+      assert_equal 16 (List.length @@ init_for_cell 4 []);
+      assert_equal 96 (List.length @@ init_line 4 []);
+      assert_equal 96 (List.length @@ init_column 4 []);
     )
 ;;
 
