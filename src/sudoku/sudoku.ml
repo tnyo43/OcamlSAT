@@ -74,15 +74,20 @@ let init_block n res =
   let rec remove_u lst k =
     match lst with
     | [] -> k []
-    | h::t -> if h = [U] then remove_u t k else remove_u t (fun x -> k (h::x))
+    | h::t ->
+      begin
+        match h with
+        | None -> remove_u t k
+        | Some h' -> remove_u t (fun x -> k (h'::x)) 
+      end
   in
   remove_u (
     init_sub
       n
       (fun l x z -> (
         fun y -> 
-          if ((l-1)/s*s+(x-1)/s+1) = ((l-1)/s*s+(x+z-1)/s+1) || ((l-1) mod s * s +(x-1) mod s+1) = ((l-1) mod s * s +(x+z-1) mod s+1) then [U]
-          else [N (alphabet_of_cell_and_num ((l-1)/s*s+(x-1)/s+1) ((l-1) mod s * s +(x-1) mod s+1) y); N (alphabet_of_cell_and_num ((l-1)/s*s+(x+z-1)/s+1) ((l-1) mod s * s +(x+z-1) mod s+1) y)])
+          if ((l-1)/s*s+(x-1)/s+1) = ((l-1)/s*s+(x+z-1)/s+1) || ((l-1) mod s * s +(x-1) mod s+1) = ((l-1) mod s * s +(x+z-1) mod s+1) then None
+          else Some [N (alphabet_of_cell_and_num ((l-1)/s*s+(x-1)/s+1) ((l-1) mod s * s +(x-1) mod s+1) y); N (alphabet_of_cell_and_num ((l-1)/s*s+(x+z-1)/s+1) ((l-1) mod s * s +(x+z-1) mod s+1) y)])
       )
       res
   ) (fun x -> x)

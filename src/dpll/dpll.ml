@@ -1,6 +1,6 @@
 type assign = string * bool;;
 
-type literal = | P of string | N of string | U;;
+type literal = | P of string | N of string;;
 type clause = literal list;;
 type cnf = clause list;;
 
@@ -19,14 +19,12 @@ let get_variable lit =
   match lit with
   | P s -> s
   | N s -> s
-  | U -> failwith "get variavle from invalid literal"
 ;;
 
 let get_state lit =
   match lit with
   | P _ -> true
   | N _ -> false
-  | U -> failwith "get state from invalid literal"
 ;;
 
 let comp_string s1 s2 =
@@ -98,12 +96,12 @@ let update_clause cla s b =
     let cla1 = List.map
       (fun lit ->
         if s = get_variable lit then
-          if b = get_state lit then raise Satisfied else U
-        else lit)
+          if b = get_state lit then raise Satisfied else None
+        else Some lit)
       cla
     in
-    if cla1 = [U] then raise Unsat
-    else List.filter (fun lit -> not (lit = U)) cla1
+    if cla1 = [None] then raise Unsat
+    else List.fold_right (fun x res -> match x with | None -> res | Some y -> y::res) cla1 []
   with | Satisfied -> []
 ;;
 
