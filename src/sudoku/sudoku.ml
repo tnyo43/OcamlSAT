@@ -28,7 +28,11 @@ let alphabet_of_cell_and_num i j k =
 ;;
 
 let cell_and_num_of_alphabet s =
-  List.map (fun i -> String.get s i)(range 3)
+  List.map (fun i -> int_of_alphabet @@ String.get s i)(range1 0 2)
+;;
+
+let number_of_asgn_alphabet s =
+  List.nth (cell_and_num_of_alphabet s) 2
 ;;
 
 let init_for_cell n res =
@@ -83,3 +87,51 @@ let init_block n res =
       res
   ) (fun x -> x)
 ;;
+
+let init_sudoku n =
+  init_for_cell n @@ init_line n @@ init_column n @@ init_block n []
+;;
+
+let create_problem problem n =
+  let rec create_line line i j res =
+    match line with
+    | [] -> res
+    | h::t ->
+      if h = 0 then create_line t i (j+1) res
+      else create_line t i (j+1) ([P (alphabet_of_cell_and_num i j h)] :: res)
+  in
+  let rec create field i res =
+    match field with
+    | [] -> res
+    | h::t ->
+      create t (i+1) @@ create_line h i 1 res
+  in create problem 1 @@ init_sudoku n
+;;
+
+let solve_sudoku problem n =
+  let asgn = solve @@ create_problem problem n in
+  let rec puzzle_of_asgn asgn k =
+    match asgn with
+    | [] -> k []
+    | (s, false)::t -> puzzle_of_asgn t k
+    | (s, true)::t -> puzzle_of_asgn t (fun puzzle -> k (number_of_asgn_alphabet s::puzzle))
+  in
+  let rec n_split i inner lst k =
+    match lst with
+    | [] -> if i = 1 then k [] else failwith "the length of list must be multiple of n"
+    | h::t -> if i = n then n_split 1 [] t (fun res -> k ((List.rev (h::inner))::res)) else n_split (i+1) (h::inner) t k
+  in
+  let puzzle = puzzle_of_asgn asgn (fun x -> x) in
+  n_split 1 [] puzzle (fun x -> x)
+;;
+
+
+let problem = [
+  [0;0;0;4];
+  [0;0;1;2];
+  [0;0;4;3];
+  [4;3;2;1]
+];;
+
+
+solve_sudoku problem 4;;
