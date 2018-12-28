@@ -29,6 +29,59 @@ let get_state lit =
   | U -> failwith "get state from invalid literal"
 ;;
 
+let comp_string s1 s2 =
+  if s1 = s2 then 0
+  else if s1 > s2 then 1
+  else -1
+;;
+
+let comp_literal lit1 lit2 =
+  match lit1, lit2 with
+  | P s1, P s2 -> comp_string s1 s2
+  | N s1, N s2 -> comp_string s1 s2
+  | P s1, N s2 -> if s1 = s2 then 1 else comp_string s1 s2
+  | N s1, P s2 -> if s1 = s2 then -1 else comp_string s1 s2
+;;
+
+let comp_clause cla1 cla2 =
+  let cla3 = List.sort comp_literal cla1 in
+  let cla4 = List.sort comp_literal cla2 in
+  let rec comp_clause cla1 cla2 =
+    match cla1, cla2 with
+    | h1::t1, h2::t2 ->
+        let res = comp_literal h1 h2 in
+        if res = 0 then comp_clause t1 t2 else res
+    | _::_, [] -> 1
+    | [], _::_ -> -1
+    | [], [] -> 0
+  in comp_clause cla3 cla4
+;;
+
+let comp_cnf cnf1 cnf2 =
+  let cnf3 = List.sort comp_clause cnf1 in
+  let cnf4 = List.sort comp_clause cnf2 in
+  let rec comp_cnf cnf1 cnf2 =
+    match cnf1, cnf2 with
+    | h1::t1, h2::t2 ->
+        let res = comp_clause h1 h2 in
+        if res = 0 then comp_cnf t1 t2 else res
+    | _::_, [] -> 1
+    | [], _::_ -> -1
+    | [], [] -> 0
+  in comp_cnf cnf3 cnf4
+;;
+
+let is_different_each_other comp lst =
+  let sorted_list = List.sort comp lst in
+  let rec check lst =
+    match lst with
+    | x::y::t -> if comp x y = 0 then false else check (y::t)
+    | _ -> true
+  in
+  check sorted_list
+;;
+
+
 let make_alph_set cnf1 =
   let add_set cla set = List.fold_right (fun lit -> SS.add @@ get_variable lit) cla set in
   List.fold_right (fun cla -> add_set cla) cnf1 SS.empty
