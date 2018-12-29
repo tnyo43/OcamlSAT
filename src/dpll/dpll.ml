@@ -7,11 +7,12 @@ type cnf = clause list;;
 type alphabets = string list;;
 
 module SS = Set.Make(String);;
+module SM = Map.Make(String);;
 
 exception Satisfied;;
 exception Unsat;;
 exception Sat of assign list;;
-exception Test of cnf;;
+exception UnitPropagation of assign;;
 
 let default_assign = false;;
 
@@ -112,24 +113,60 @@ let apply_assign cnf1 asgn asgns =
   else res
 ;;
 
-let next_assign_list sorted_cnf alphs =
-  if List.length @@ List.hd sorted_cnf = 1 then
-    let lit = List.hd @@ List.hd sorted_cnf in
-    (get_variable lit, [(get_variable lit, get_state lit)])
-  else (List.hd alphs, [(List.hd alphs, false); (List.hd alphs, true)])
+let asgn_pos = 2;;
+let asgn_neg = 1;;
+
+let unit_propagation cnf1 =
+  try
+    let appear_count = SM.empty in
+    let unit_propagation_clause cla appear_count =
+      if List.length cla = 1 then 
+        match (List.hd cla) with
+        | lit -> raise (UnitPropagation (get_variable lit, get_state lit))
+      else
+        let update_count map s asgn_num =
+          SM.update s (fun y -> match y with | None -> Some asgn_num | Some z -> Some (z lor asgn_num)) map
+        in
+        let rec unit_propagation_clause_sub cla appear_count =
+          let unit_propagation_clause_sub_next lst s num =
+            unit_propagation_clause_sub lst @@ update_count appear_count s num
+          in
+          match cla with
+          | [] -> appear_count
+          | h::t ->
+              begin
+                match h with
+                | P s -> unit_propagation_clause_sub_next t s asgn_pos
+                | N s -> unit_propagation_clause_sub_next t s asgn_neg
+              end
+        in
+        unit_propagation_clause_sub cla appear_count
+    in
+    let count_result = List.fold_left (fun map cla -> unit_propagation_clause cla map) appear_count cnf1 in
+    let _ = SM.iter
+              (fun key value -> if value = asgn_pos lor asgn_neg then () else raise (UnitPropagation (key, value = asgn_pos)))
+              count_result
+    in
+    None
+  with | UnitPropagation res -> Some res
+;;
+
+let next_assign_list cnf1 alphs =
+  match unit_propagation cnf1 with
+  | Some (s, b) -> (s, [(s, b)])
+  | None -> (List.hd alphs, [(List.hd alphs, false); (List.hd alphs, true)])
 ;;
 
 let solve cnf1 =
   let rec solve cnf1 alphs asgns =
-    let sorted_cnf = List.sort (fun l1 l2 -> (List.length l1) - (List.length l2)) cnf1 in
-    let (a, next_assigns) = next_assign_list sorted_cnf alphs in
+    let (a, next_assigns) = next_assign_list cnf1 alphs in
     let next_alphs = List.filter (fun x -> not(x = a)) alphs in
     let rec try_asgn next_assigns =
       match next_assigns with
       | [] -> raise Unsat
       | asgn::tl ->
           try
-            let cnf2 = apply_assign sorted_cnf asgn asgns in
+            let cnf2 = apply_assign cnf1 asgn asgns in
             let _ = solve cnf2 next_alphs (asgn::asgns) in []
           with Unsat -> try_asgn tl
     in

@@ -21,6 +21,14 @@ let apply_assign_test =
     )
 ;;
 
+let unit_propagation_test =
+  "単位伝播のテスト。単位伝播がないときはNoneを返す" >::
+    (fun _ ->
+      assert_equal None (unit_propagation [[P "a"; P "b"]; [N "a"; N "b"]]);
+      assert_equal (Some ("a", true)) (unit_propagation [[P "a"]; [N "a"; N "b"]]);
+      assert_equal (Some ("a", false)) (unit_propagation [[N "a"; P "b"]; [N "a"; N "b"]]);
+    )
+
 let next_assign_list_test =
   "単位伝播がある時はそれを次の割り当てとする。そうでない時は最初のアルファベットとする" >::
     (fun _ ->
@@ -28,7 +36,6 @@ let next_assign_list_test =
       assert_equal ("a", [("a", false); ("a", true)]) (next_assign_list [[P "a"; N "b"]; [N "a"; P "b"]] ["a"; "b"]);
     )
 ;;
-
 
 let solve_sat_test =
   "SATのテスト。成功すると割り当てのリストを返し、失敗するとUnsatになる" >::
