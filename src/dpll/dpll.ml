@@ -1,13 +1,16 @@
-type assign = string * bool;;
+type assign = int * bool;;
 
-type literal = | P of string | N of string;;
+type literal = | P of int | N of int;;
 type clause = literal list;;
 type cnf = clause list;;
 
-type alphabets = string list;;
+type alphabets = int list;;
 
-module SS = Set.Make(String);;
-module SM = Map.Make(String);;
+module IntOrd = struct
+  type t = int
+  let compare = Pervasives.compare
+end
+module SS = Set.Make(IntOrd);;
 
 exception Satisfied;;
 exception Unsat;;
@@ -28,7 +31,7 @@ let get_state lit =
   | N _ -> false
 ;;
 
-let comp_string s1 s2 =
+let comp_int s1 s2 =
   if s1 = s2 then 0
   else if s1 > s2 then 1
   else -1
@@ -36,10 +39,10 @@ let comp_string s1 s2 =
 
 let comp_literal lit1 lit2 =
   match lit1, lit2 with
-  | P s1, P s2 -> comp_string s1 s2
-  | N s1, N s2 -> comp_string s1 s2
-  | P s1, N s2 -> if s1 = s2 then 1 else comp_string s1 s2
-  | N s1, P s2 -> if s1 = s2 then -1 else comp_string s1 s2
+  | P s1, P s2 -> comp_int s1 s2
+  | N s1, N s2 -> comp_int s1 s2
+  | P s1, N s2 -> if s1 = s2 then 1 else comp_int s1 s2
+  | N s1, P s2 -> if s1 = s2 then -1 else comp_int s1 s2
 ;;
 
 let comp_clause cla1 cla2 =
