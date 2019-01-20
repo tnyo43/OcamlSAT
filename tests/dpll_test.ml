@@ -26,7 +26,7 @@ let unit_propagation_test =
     (fun _ ->
       assert_equal None (unit_propagation [[P "a"; P "b"]; [N "a"; N "b"]]);
       assert_equal (Some ("a", true)) (unit_propagation [[P "a"]; [N "a"; N "b"]]);
-      assert_equal (Some ("a", false)) (unit_propagation [[N "a"; P "b"]; [N "a"; N "b"]]);
+      assert_equal None (unit_propagation [[N "a"; P "b"]; [N "a"; N "b"]]);
     )
 
 let next_assign_list_test =

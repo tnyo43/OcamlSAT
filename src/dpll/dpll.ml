@@ -118,35 +118,12 @@ let asgn_neg = 1;;
 
 let unit_propagation cnf1 =
   try
-    let appear_count = SM.empty in
-    let unit_propagation_clause cla appear_count =
-      if List.length cla = 1 then 
-        match (List.hd cla) with
-        | lit -> raise (UnitPropagation (get_variable lit, get_state lit))
-      else
-        let update_count map s asgn_num =
-          SM.update s (fun y -> match y with | None -> Some asgn_num | Some z -> Some (z lor asgn_num)) map
-        in
-        let rec unit_propagation_clause_sub cla appear_count =
-          let unit_propagation_clause_sub_next lst s num =
-            unit_propagation_clause_sub lst @@ update_count appear_count s num
-          in
-          match cla with
-          | [] -> appear_count
-          | h::t ->
-              begin
-                match h with
-                | P s -> unit_propagation_clause_sub_next t s asgn_pos
-                | N s -> unit_propagation_clause_sub_next t s asgn_neg
-              end
-        in
-        unit_propagation_clause_sub cla appear_count
-    in
-    let count_result = List.fold_left (fun map cla -> unit_propagation_clause cla map) appear_count cnf1 in
-    let _ = SM.iter
-              (fun key value -> if value = asgn_pos lor asgn_neg then () else raise (UnitPropagation (key, value = asgn_pos)))
-              count_result
-    in
+    let _ = List.iter
+              (fun cla -> 
+                if List.length cla = 1
+                then let lit = List.hd cla in raise (UnitPropagation (get_variable lit, get_state lit))
+                else ())
+              cnf1 in
     None
   with | UnitPropagation res -> Some res
 ;;
