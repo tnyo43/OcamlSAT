@@ -97,15 +97,20 @@ let sort_assign asgns =
 
 let update_clause cla s b =
   try
-    let cla1 = List.map
-      (fun lit ->
-        if s = get_variable lit then
-          if b = get_state lit then raise Satisfied else None
-        else Some lit)
-      cla
-    in
-    if cla1 = [None] then raise Unsat
-    else List.fold_right (fun x res -> match x with | None -> res | Some y -> y::res) cla1 []
+    if List.length cla = 1
+    then
+      let lit = List.hd cla in
+      if get_variable lit = s
+      then
+        if get_state lit = b then raise Satisfied else raise Unsat
+      else cla
+    else List.fold_right
+            (fun lit res ->
+                if get_variable lit = s
+                then
+                  if get_state lit = b then raise Satisfied else res
+                else lit :: res)
+            cla []
   with | Satisfied -> []
 ;;
 
