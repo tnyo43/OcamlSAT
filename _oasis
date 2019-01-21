@@ -11,6 +11,11 @@ Library dpll
   Path: src/dpll
   Modules: Dpll
 
+Library cdcl
+  Path: src/cdcl
+  BuildDepends: dpll
+  Modules: Cdcl
+
 Library sudoku
   Path: src/sudoku
   BuildDepends: dpll
@@ -22,7 +27,7 @@ Executable test
   Build$: flag(tests)
   CompiledObject: native
   Install: false
-  BuildDepends: oUnit, dpll, sudoku
+  BuildDepends: oUnit, dpll, cdcl, sudoku
 
 Test test
   Run$: flag(tests)

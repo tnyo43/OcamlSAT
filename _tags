@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 824b0d90cbf9b2ceb80140e4d641e932)
+# DO NOT EDIT (digest: 561dfad6d1b766254b8463e5840425e8)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -16,14 +16,19 @@ true: annot, bin_annot
 "_darcs": not_hygienic
 # Library dpll
 "src/dpll/dpll.cmxs": use_dpll
+# Library cdcl
+"src/cdcl/cdcl.cmxs": use_cdcl
+<src/cdcl/*.ml{,i,y}>: use_dpll
 # Library sudoku
 "src/sudoku/sudoku.cmxs": use_sudoku
 <src/sudoku/*.ml{,i,y}>: use_dpll
 # Executable test
 "tests/test.native": pkg_oUnit
+"tests/test.native": use_cdcl
 "tests/test.native": use_dpll
 "tests/test.native": use_sudoku
 <tests/*.ml{,i,y}>: pkg_oUnit
+<tests/*.ml{,i,y}>: use_cdcl
 <tests/*.ml{,i,y}>: use_dpll
 <tests/*.ml{,i,y}>: use_sudoku
 # OASIS_STOP

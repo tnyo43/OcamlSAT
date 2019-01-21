@@ -1,0 +1,12 @@
+# OASIS_START
+# DO NOT EDIT (digest: f7a24d6195af63d0546e1eb4015d098d)
+version = "0.1.0"
+description = "SAT solver"
+requires = "dpll"
+archive(byte) = "cdcl.cma"
+archive(byte, plugin) = "cdcl.cma"
+archive(native) = "cdcl.cmxa"
+archive(native, plugin) = "cdcl.cmxs"
+exists_if = "cdcl.cma"
+# OASIS_STOP
+
