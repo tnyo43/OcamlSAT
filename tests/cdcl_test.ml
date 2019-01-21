@@ -21,9 +21,19 @@ let update_cdcl_clause_test =
     )
 ;;
 
+let unit_propagation_test =
+  "単位伝播。更新したほうの項をみて、単位伝播がないときはNoneを返す" >::
+    (fun _ ->
+      assert_equal None (unit_propagation [([P 1; P 2], [P 1; P 2]); ([N 1; N 2], [N 1; N 2])]);
+      assert_equal (Some (1, true)) (unit_propagation [([P 1], [P 1; P 2]); ([N 1; N 2], [N 1; N 2])]);
+      assert_equal None (unit_propagation [([N 1; P 2], [N 1; P 2]); ([N 1; N 2], [N 1; N 2])]);
+    )
+;;
+
 let tests =
   "all_tests" >::: [
     and_clause_test;
     update_cdcl_clause_test;
+    unit_propagation_test;
   ]
 ;;

@@ -35,7 +35,6 @@ let update_cdcl_clause cdcl_cla cla s b =
   | Unsat -> raise (NewClause (and_clause original_cla cla))
 ;;
 
-(*
 let apply_assign cnf1 asgn asgns =
   let (s, b) = asgn in
   let res = List.filter (fun cla -> List.length cla > 0) @@ List.map (fun cla -> update_clause cla s b) cnf1 in
@@ -46,9 +45,9 @@ let apply_assign cnf1 asgn asgns =
 let unit_propagation cnf1 =
   try
     let _ = List.iter
-              (fun (cla, cla_origin) -> 
-                if List.length cla = 1
-                then let lit = List.hd cla in raise (UnitPropagation (get_variable lit, get_state lit))
+              (fun (current_cla, _) ->
+                if List.length current_cla = 1
+                then let lit = List.hd current_cla in raise (UnitPropagation (get_variable lit, get_state lit))
                 else ())
               cnf1 in
     None
@@ -60,28 +59,3 @@ let next_assign_list cnf1 alphs =
   | Some (s, b) -> (s, [(s, b)])
   | None -> (List.hd alphs, [(List.hd alphs, false); (List.hd alphs, true)])
 ;;
-
-let solve cnf1 =
-  let rec solve cnf1 alphs asgns =
-    let (a, next_assigns) = next_assign_list cnf1 alphs in
-    let next_alphs = List.filter (fun x -> not(x = a)) alphs in
-    let rec try_asgn next_assigns =
-      match next_assigns with
-      | [] -> raise Unsat
-      | asgn::tl ->
-          try
-            let cnf2 = apply_assign cnf1 asgn asgns in
-            let _ = solve cnf2 next_alphs (asgn::asgns) in []
-          with Unsat -> try_asgn tl
-    in
-    try_asgn next_assigns
-  in
-  let alph_set = make_alph_set cnf1 in
-  let alphs = SS.elements alph_set in
-  try let _ = solve cnf1 alphs [] in raise Unsat
-  with Sat asgns -> 
-    let rests = SS.elements @@ List.fold_right (fun (s, _) -> SS.remove s) asgns alph_set in
-    let result_assigns = List.fold_left (fun lst s -> (s, default_assign)::lst) asgns rests in
-    sort_assign result_assigns
-;;
-*)
