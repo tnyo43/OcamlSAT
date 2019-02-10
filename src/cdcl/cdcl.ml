@@ -59,3 +59,28 @@ let next_assign_list cnf1 alphs =
   | Some (s, b) -> (s, [(s, b)])
   | None -> (List.hd alphs, [(List.hd alphs, false); (List.hd alphs, true)])
 ;;
+(*
+let solve cnf1 =
+  let rec solve cnf1 alphs asgns =
+    let (a, next_assigns) = next_assign_list cnf1 alphs in
+    let next_alphs = List.filter (fun x -> not(x = a)) alphs in
+    let rec try_asgn next_assigns =
+      match next_assigns with
+      | [] -> raise Unsat
+      | asgn::tl ->
+          try
+            let cnf2 = apply_assign cnf1 asgn asgns in
+            let _ = solve cnf2 next_alphs (asgn::asgns) in []
+          with Unsat -> try_asgn tl
+    in
+    try_asgn next_assigns
+  in
+  let alph_set = make_alph_set cnf1 in
+  let alphs = SS.elements alph_set in
+  try let _ = solve cnf1 alphs [] in raise Unsat
+  with Sat asgns -> 
+    let rests = SS.elements @@ List.fold_right (fun (s, _) -> SS.remove s) asgns alph_set in
+    let result_assigns = List.fold_left (fun lst s -> (s, default_assign)::lst) asgns rests in
+    sort_assign result_assigns
+;;
+*)

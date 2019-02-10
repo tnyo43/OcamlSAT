@@ -1,6 +1,9 @@
 type assign = int * bool;;
 
-type literal = | P of int | N of int;;
+type literal = int;;
+let pos x = x;;
+let neg x = -x;;
+
 type clause = literal list;;
 type cnf = clause list;;
 
@@ -19,17 +22,8 @@ exception UnitPropagation of assign;;
 
 let default_assign = false;;
 
-let get_variable lit =
-  match lit with
-  | P s -> s
-  | N s -> s
-;;
-
-let get_state lit =
-  match lit with
-  | P _ -> true
-  | N _ -> false
-;;
+let get_variable lit = if lit > 0 then lit else -lit;;
+let get_state lit = (lit > 0);;
 
 let comp_int s1 s2 =
   if s1 = s2 then 0
@@ -38,11 +32,14 @@ let comp_int s1 s2 =
 ;;
 
 let comp_literal lit1 lit2 =
-  match lit1, lit2 with
-  | P s1, P s2 -> comp_int s1 s2
-  | N s1, N s2 -> comp_int s1 s2
-  | P s1, N s2 -> if s1 = s2 then 1 else comp_int s1 s2
-  | N s1, P s2 -> if s1 = s2 then -1 else comp_int s1 s2
+  let s1 = get_variable lit1 in
+  let s2 = get_variable lit2 in
+  if get_state lit1 then
+    if get_state lit2 then comp_int s1 s2
+    else if s1 = s2 then 1 else comp_int s1 s2
+  else
+    if get_state lit2 then if s1 = s2 then -1 else comp_int s1 s2
+    else comp_int s1 s2
 ;;
 
 let comp_clause cla1 cla2 =

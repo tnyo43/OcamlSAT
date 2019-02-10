@@ -20,9 +20,11 @@ let isqrt n =
   isqrt n 1
 ;;
 
-let variable_of_cell_and_num n i j k = (k-1) + n*((j-1) + n*n*(i-1));;
-
-let cell_and_num_of_variable n s = [s/n/n+1; ((s/n) mod n) + 1; (s mod n) + 1];;
+let variable_of_cell_and_num n i j k = ((k-1) + n*((j-1) + n*n*(i-1)))+1;;
+let cell_and_num_of_variable n s' =
+  let s = s'-1 in
+  [s/n/n+1; ((s/n) mod n) + 1; (s mod n) + 1]
+;;
 
 let number_of_asgn_alphabet n s =
   List.nth (cell_and_num_of_variable n s) 2
@@ -31,7 +33,7 @@ let number_of_asgn_alphabet n s =
 let init_for_cell n res =
   let rec init_for_cell m res l =
     if m = 0 then res
-    else init_for_cell (m-1) ((List.fold_right (fun x cla -> P (variable_of_cell_and_num n l m x)::cla) (range n) []) :: res) l
+    else init_for_cell (m-1) ((List.fold_right (fun x cla -> pos (variable_of_cell_and_num n l m x)::cla) (range n) []) :: res) l
   in
   List.fold_right (fun l res -> ((init_for_cell n [] l))@ res) (range n) res
 ;;
@@ -51,14 +53,14 @@ let init_sub n f1 res =
 let init_line n res =
   init_sub
     n
-    (fun l x z -> (fun y -> [N (variable_of_cell_and_num n l x y); N (variable_of_cell_and_num n l (x+z) y)]))
+    (fun l x z -> (fun y -> [neg (variable_of_cell_and_num n l x y); neg (variable_of_cell_and_num n l (x+z) y)]))
     res
 ;;
 
 let init_column n res =
   init_sub
     n
-    (fun c x z -> (fun y -> [N (variable_of_cell_and_num n x c y); N (variable_of_cell_and_num n (x+z) c y)]))
+    (fun c x z -> (fun y -> [neg (variable_of_cell_and_num n x c y); neg (variable_of_cell_and_num n (x+z) c y)]))
     res
 ;;
 
@@ -80,8 +82,8 @@ let init_block n res =
       (fun l x z -> (
         fun y -> 
           if ((l-1)/s*s+(x-1)/s+1) = ((l-1)/s*s+(x+z-1)/s+1) || ((l-1) mod s * s +(x-1) mod s+1) = ((l-1) mod s * s +(x+z-1) mod s+1) then None
-          else Some [N (variable_of_cell_and_num n ((l-1)/s*s+(x-1)/s+1) ((l-1) mod s * s +(x-1) mod s+1) y);
-                     N (variable_of_cell_and_num n ((l-1)/s*s+(x+z-1)/s+1) ((l-1) mod s * s +(x+z-1) mod s+1) y)])
+          else Some [neg (variable_of_cell_and_num n ((l-1)/s*s+(x-1)/s+1) ((l-1) mod s * s +(x-1) mod s+1) y);
+                     neg (variable_of_cell_and_num n ((l-1)/s*s+(x+z-1)/s+1) ((l-1) mod s * s +(x+z-1) mod s+1) y)])
       )
       res
   ) (fun x -> x)
@@ -97,7 +99,7 @@ let create_problem problem n =
     | [] -> res
     | h::t ->
       if h = 0 then create_line t i (j+1) res
-      else create_line t i (j+1) ([P (variable_of_cell_and_num n i j h)] :: res)
+      else create_line t i (j+1) ([pos (variable_of_cell_and_num n i j h)] :: res)
   in
   let rec create field i res =
     match field with
