@@ -1,12 +1,22 @@
 open Dpll
 
+type deduce = literal * clause * int (* 変数・原因になった項・レベル *)
 type cdcl_clause = clause * clause;;
 type cdcl_cnf = cdcl_clause list;;
 
-exception NewClause of clause
+module LevelMap = Map.Make(IntOrd);;
+
+exception CdclUnitPropagation of (literal * clause);;
+exception NewClause of clause;;
+exception CdclSat of (assign list) list;;
+exception CdclUnsat of (int * clause);;
 
 let create_cdcl_cnf cnf1 =
   List.fold_right (fun cla cdcl_cnf1 -> (cla, cla)::cdcl_cnf1) cnf1 []
+;;
+
+let cdcl_cnf_of_cnf cnf1 =
+  List.map (fun cla -> (cla, cla)) cnf1
 ;;
 
 let and_clause cla1 cla2 =
@@ -37,50 +47,70 @@ let update_cdcl_clause cdcl_cla cla s b =
 
 let apply_assign cnf1 asgn asgns =
   let (s, b) = asgn in
-  let res = List.filter (fun cla -> List.length cla > 0) @@ List.map (fun cla -> update_clause cla s b) cnf1 in
-  if res = [] then raise (Sat (asgn :: asgns))
+  let res = List.filter (fun (cla, _) -> List.length cla > 0) 
+         @@ List.map (fun (cla, original_cla) -> update_clause cla s b, original_cla) cnf1 in
+  if res = [] then raise (CdclSat ([asgn] :: asgns))
   else res
 ;;
 
+(* 単位伝播があるとき、その伝播をもたらした元々の項を教える *)
 let unit_propagation cnf1 =
   try
     let _ = List.iter
-              (fun (current_cla, _) ->
+              (fun (current_cla, original_cla) ->
                 if List.length current_cla = 1
-                then let lit = List.hd current_cla in raise (UnitPropagation (get_variable lit, get_state lit))
+                then let lit = List.hd current_cla in raise (CdclUnitPropagation (lit, original_cla))
                 else ())
               cnf1 in
     None
-  with | UnitPropagation res -> Some res
+  with | CdclUnitPropagation res -> Some res
 ;;
 
-let next_assign_list cnf1 alphs =
+let next_assign cnf1 alphs =
   match unit_propagation cnf1 with
-  | Some (s, b) -> (s, [(s, b)])
-  | None -> (List.hd alphs, [(List.hd alphs, false); (List.hd alphs, true)])
+  | Some (lit, cla) -> let a = get_variable lit in (a, get_state lit), Some cla
+  | None -> let a = List.hd alphs in (a, true), None
 ;;
-(*
-let solve cnf1 =
-  let rec solve cnf1 alphs asgns =
-    let (a, next_assigns) = next_assign_list cnf1 alphs in
-    let next_alphs = List.filter (fun x -> not(x = a)) alphs in
-    let rec try_asgn next_assigns =
-      match next_assigns with
-      | [] -> raise Unsat
-      | asgn::tl ->
-          try
-            let cnf2 = apply_assign cnf1 asgn asgns in
-            let _ = solve cnf2 next_alphs (asgn::asgns) in []
-          with Unsat -> try_asgn tl
+
+let update_level_asgns asgns asgn =
+  match asgns with
+  | hd::tl -> (asgn::hd) :: tl
+;;
+
+(* 最大レベルの変数が出て来ていいのは1回まで、 *)
+let rec is_valid_clause cla level_asgns count =
+  match level_asgns with
+  | [] -> count <= 1
+  | (s, b)::tl -> is_valid_clause cla tl @@
+      List.fold_left (fun count lit -> if get_variable lit = s then count+1 else count) count cla
+;;
+
+(* 新しい項を作る *)
+let rec diagnose cla_hist level_asgns cla =
+  if (is_valid_clause cla level_asgns 0) then cla
+  else diagnose (List.tl cla_hist) level_asgns (and_clause cla @@ List.hd cla_hist)
+;;
+
+let rec print_list =function 
+[] -> ()
+| e::l -> print_int e ; print_string " " ; print_list l
+
+(* 項に登場する変数のうち、もっとも早い登場が早いレベル *)
+let check_level cla asgns =
+  if List.length cla = 1 then 0
+  else
+    let level = List.length asgns in
+    let rec make_level_map asgns level m =
+      match asgns with
+      | [] -> m
+      | asgn_list::tl -> make_level_map tl (level-1) @@ List.fold_left (fun m (s, b) -> LevelMap.add s level m) m asgn_list
     in
-    try_asgn next_assigns
-  in
-  let alph_set = make_alph_set cnf1 in
-  let alphs = SS.elements alph_set in
-  try let _ = solve cnf1 alphs [] in raise Unsat
-  with Sat asgns -> 
-    let rests = SS.elements @@ List.fold_right (fun (s, _) -> SS.remove s) asgns alph_set in
-    let result_assigns = List.fold_left (fun lst s -> (s, default_assign)::lst) asgns rests in
-    sort_assign result_assigns
+    let m = make_level_map asgns level (LevelMap.empty) in
+    let levels = List.fold_left
+      (fun levels lit ->
+        let l = LevelMap.find (get_variable lit) m in
+        if List.mem l levels then levels else l::levels)
+      [] cla
+    in
+    if List.length levels = 1 then List.hd levels - 1 else List.nth (List.rev @@ List.sort comp_int levels) 1
 ;;
-*)
