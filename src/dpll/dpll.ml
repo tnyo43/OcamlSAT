@@ -31,15 +31,18 @@ let comp_int s1 s2 =
   else -1
 ;;
 
+let int_of_lit lit =
+  let s = get_variable lit in
+  let b = if get_state lit then 1 else 0 in
+  s*2 + b
+;;
+
 let comp_literal lit1 lit2 =
-  let s1 = get_variable lit1 in
-  let s2 = get_variable lit2 in
-  if get_state lit1 then
-    if get_state lit2 then comp_int s1 s2
-    else if s1 = s2 then 1 else comp_int s1 s2
-  else
-    if get_state lit2 then if s1 = s2 then -1 else comp_int s1 s2
-    else comp_int s1 s2
+  let v1 = int_of_lit lit1 in
+  let v2 = int_of_lit lit2 in
+  if v1 < v2 then -1
+  else if v1 = v2 then 0
+  else 1
 ;;
 
 let comp_clause cla1 cla2 =
