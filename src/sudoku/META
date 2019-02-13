@@ -1,8 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: 3a1ea9bc0d00ec1c6f70e6c0a219f11c)
+# DO NOT EDIT (digest: baa4a4dd45c3734eb35f2ca4ddb12a0a)
 version = "0.1.0"
 description = "SAT solver"
-requires = "dpll"
+requires = "dpll cdcl"
 archive(byte) = "sudoku.cma"
 archive(byte, plugin) = "sudoku.cma"
 archive(native) = "sudoku.cmxa"

@@ -5,8 +5,8 @@ open Sudoku
 let alphabet_of_cell_and_num_test =
   "セルの位置と値から割り当てのキーを作成する" >::
     (fun _ ->
-      assert_equal 6 (variable_of_cell_and_num 4 1 2 3);
-      assert_equal 156645 (variable_of_cell_and_num 25 11 16 21);
+      assert_equal 7 (variable_of_cell_and_num 4 1 2 3);
+      assert_equal 156646 (variable_of_cell_and_num 25 11 16 21);
     )
 ;;
 
@@ -42,7 +42,7 @@ let init_part_test =
 ;;
 
 let problem1 = [
-  [0;0;0;4];
+  [2;0;0;4];
   [0;0;1;2];
   [0;0;4;3];
   [4;3;2;1]
@@ -85,18 +85,27 @@ let problem3 = [
 let solve_sudoku_test =
   "数独の問題を解く。解がない問題はエラー" >::
     (fun _ ->
-      assert_equal ans1 (solve_sudoku problem1 4);
-      assert_equal ans2 (solve_sudoku problem2 9);
-      assert_raises Unsat (fun _ -> solve_sudoku problem3 4);
+      assert_equal ans1 (solve_sudoku Dpll.solve problem1 4);
+      assert_equal ans2 (solve_sudoku Dpll.solve  problem2 9);
+      assert_raises Unsat (fun _ -> solve_sudoku Dpll.solve problem3 4);
+    )
+;;
+
+
+let solve_sudoku_cdcl_test =
+  "CDCLで数独の問題を解く。解がない問題はエラー" >::
+    (fun _ ->
+      assert_equal ans1 (solve_sudoku Cdcl.solve problem1 4);
+      assert_equal ans2 (solve_sudoku Cdcl.solve problem2 9);
+      assert_raises Unsat (fun _ -> solve_sudoku Dpll.solve problem3 4);
     )
 ;;
 
 let tests =
   "all_tests" >::: [
-    (*
     alphabet_of_cell_and_num_test;
     init_part_test;
-    *)
     solve_sudoku_test;
+    solve_sudoku_cdcl_test;
   ]
 ;;

@@ -66,7 +66,6 @@ let and_clause cla1 cla2 =
 
 let apply_assign_to_cnf cnf1 asgn asgn_level_list =
   let (s, b) = asgn in
-  let _ = print_string "try : " in let _ = print_asgn asgn in let _ = print_string "\n" in
   let res = List.filter (fun (cla, _) -> List.length cla > 0) 
          @@ List.map (fun (cla, original_cla) -> 
                 try
@@ -182,6 +181,7 @@ let show_state
         (clause_db : clause list) (* CNFを構成する項全体 *)
         alphs (* 割り当てられていない変数 *)
         initial_alphs = (* CNFに登場する全ての変数 *)
+        (*
     let _ = print_string "\n       ==== state ===\n" in
     let _ = print_string "===== assign level list ====\n" in
     let _ = List.iter (fun x -> print_asgn_list x; print_string "\n") asgn_level_list in
@@ -195,7 +195,9 @@ let show_state
     let _ = print_list alphs in
     let _ = print_string "\n===== initial variable =====\n" in
     let _ = print_list initial_alphs in
-    print_string "\n============================\n"
+    let _ = print_string "\n============================\n" in
+        *)
+        ()
 ;;
 
 let rec apply_and_update f lst x =
@@ -234,7 +236,6 @@ let rec solve_sub
         alphs
         initial_alphs  =
   let _ = show_state asgn_level_list cnf_hist cla_hist_list clause_db alphs initial_alphs in
-  let _ = print_string "hoge" in
   (* cnf_hist、cla_hist_list、asgn_level_listはそれぞれ同じ要素数 *)
   if not (List.length cnf_hist = List.length cla_hist_list
        && List.length cnf_hist = List.length asgn_level_list
@@ -244,7 +245,6 @@ let rec solve_sub
           (string_of_int @@ List.length cla_hist_list)^" "^
           (string_of_int @@ List.length asgn_level_list)^" : different size" else
   let asgn, cla' = next_assign (List.hd cnf_hist) alphs in
-  let _ = print_asgn asgn in
   let (s, b) = asgn in
   let next_alphs = List.filter (fun x -> not(x = s)) alphs in
   match cla' with
@@ -277,11 +277,9 @@ let rec solve_sub
                           initial_alphs,
                           true
                 | Conflict cla2 -> (* 単位伝播した結果失敗 *)
-                  let _ = print_string "failed clause : " in let _ = print_list cla2 in let _ = print_string "\n" in
                   if List.length cla_hist_list <= 1 then raise Unsat (* 1つ目の適応でうまくいかないときはだめ *)
                   else
                     let new_clause = diagnose (List.flatten cla_hist_list) (asgn::List.hd asgn_level_list) (and_clause cla2 cla) in
-                  let _ = print_string "new clause : " in let _ = print_list new_clause in let _ = print_string "\n" in
                     let new_clause_db = new_clause::clause_db in
                     let level = check_level new_clause @@ update_level_asgns asgn_level_list asgn in
                     if level = 0 then (* 追加して最初の状態に戻る *)
@@ -323,6 +321,5 @@ let rec solve cnf1 =
   let rests = SS.elements @@ List.fold_right (fun (s, _) -> SS.remove s) asgns alph_set in
   let result_assigns = List.fold_left (fun lst s -> (s, default_assign)::lst) asgns rests in  
   let result = sort_assign result_assigns in
-  let _ = print_asgn_list result in
   result
 ;;

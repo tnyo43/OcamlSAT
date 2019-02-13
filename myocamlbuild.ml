@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 6fc57eecf8bd20122c1bba657ceced24) *)
+(* DO NOT EDIT (digest: 5a72b6daaa154b7e3d0697ddfd0b7dea) *)
 module OASISGettext = struct
 (* # 22 "src/oasis/OASISGettext.ml" *)
 
@@ -890,7 +890,7 @@ let package_default =
      includes =
        [
           ("tests", ["src/cdcl"; "src/dpll"; "src/sudoku"]);
-          ("src/sudoku", ["src/dpll"]);
+          ("src/sudoku", ["src/cdcl"; "src/dpll"]);
           ("src/cdcl", ["src/dpll"])
        ]
   }

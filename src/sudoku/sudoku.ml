@@ -1,4 +1,5 @@
 open Dpll
+open Cdcl
 
 module SudokuCell = Map.Make(IntOrd);;
 
@@ -109,8 +110,7 @@ let create_problem problem n =
   in create problem 1 @@ init_sudoku n
 ;;
 
-let solve_sudoku problem n =
-  let asgn = solve @@ create_problem problem n in
+let show_sudoku_result n asgn =
   let rec puzzle_of_asgn asgn k =
     match asgn with
     | [] -> k []
@@ -126,6 +126,9 @@ let solve_sudoku problem n =
   n_split 1 [] puzzle (fun x -> x)
 ;;
 
+let solve_sudoku solve_function problem n =
+  show_sudoku_result n @@ solve_function @@ create_problem problem n
+;;
 
 let problem = [
   [0;0;0;4];
@@ -133,5 +136,3 @@ let problem = [
   [0;0;4;3];
   [4;3;2;1]
 ];;
-
-solve_sudoku problem 4;;

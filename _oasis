@@ -18,7 +18,7 @@ Library cdcl
 
 Library sudoku
   Path: src/sudoku
-  BuildDepends: dpll
+  BuildDepends: dpll, cdcl
   Modules: Sudoku
 
 Executable test
