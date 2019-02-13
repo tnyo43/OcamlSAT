@@ -241,12 +241,12 @@ let add_clause_every_level asgn_level_list cla cnf_hist =
 ;;
 
 let rec solve_sub
-        (asgn_level_list : (assign list) list)
-        (cnf_hist : cdcl_cnf list)
-        (cla_hist_list : (clause list) list)
-        (clause_db : clause list)
-        alphs
-        initial_alphs  =
+        (asgn_level_list : (assign list) list) (* 各レベルで割り当てた結果 *)
+        (cnf_hist : cdcl_cnf list) (* 各レベルでまだ解決していないCNFの残り *)
+        (cla_hist_list : (clause list) list) (* 各レベルで使用した項のリスト *)
+        (clause_db : clause list) (* CNFを構成する項全体 *)
+        alphs (* 割り当てられていない変数 *)
+        initial_alphs = (* CNFに登場する全ての変数 *)
   (* cnf_hist、cla_hist_list、asgn_level_listはそれぞれ同じ要素数 *)
   (*
   let _ = show_state asgn_level_list
