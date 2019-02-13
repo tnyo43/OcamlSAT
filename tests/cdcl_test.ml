@@ -2,13 +2,19 @@ open OUnit2
 open Dpll
 open Cdcl
 
+let and_clause_tester cla1 cla2 ignore_list =
+  let new_clause, new_ignore_list = and_clause cla1 cla2 ignore_list in
+  List.sort comp_literal new_clause, List.sort comp_literal new_ignore_list
+;;
+
 let and_clause_test =
   "二つの項の積を取る" >::
     (fun _ ->
-      assert_equal [pos 1; pos 2; neg 3; neg 4] (and_clause [pos 1; pos 2] [neg 3; neg 4]);
-      assert_equal [pos 1; neg 2; pos 3; neg 4] (and_clause [pos 1; neg 2; pos 3] [pos 3; neg 4]);
-      assert_equal [pos 1; pos 3; neg 4] (and_clause [pos 1; neg 2; pos 3] [pos 2; pos 3; neg 4]);
-      assert_raises Unsat (fun _ -> and_clause [pos 1] [neg 1]);
+      assert_equal ([pos 1; pos 2; neg 3; neg 4], []) (and_clause_tester [pos 1; pos 2] [neg 3; neg 4] []);
+      assert_equal ([pos 1; neg 2; pos 3; neg 4], []) (and_clause_tester [pos 1; neg 2; pos 3] [pos 3; neg 4] []);
+      assert_equal ([pos 1; pos 3; neg 4], [2]) (and_clause_tester [pos 1; neg 2; pos 3] [pos 2; pos 3; neg 4] []);
+      assert_equal ([pos 1], [2;3;4]) (and_clause_tester [pos 1] [pos 2; pos 3; neg 4] [2;3;4]);
+      assert_raises Unsat (fun _ -> and_clause_tester [pos 1] [neg 1] []);
     )
 ;;
 
@@ -34,24 +40,24 @@ let diagnose_test =
     (fun _ ->
       assert_equal
         [neg 2; neg 7]
-        (diagnose 
-          [[neg 2; neg 7; pos 9]; [neg 7; pos 8]; [neg 5; neg 6; pos 7]; [neg 4; pos 6]; [neg 1; neg 4; pos 5]]
-          [(4, true); (5, true); (6, true); (7, true); (8, true); (9, true)]
-          [neg 8; neg 9]
+        (List.sort comp_literal @@ diagnose 
+          [[neg 2; neg 7; pos 9]; [neg 5; neg 6; pos 7]; [neg 4; pos 6]; [neg 1; neg 4; pos 5]]
+          [(9, true); (4, true); (5, true); (6, true); (7, true)]
+          [neg 8; neg 9] [neg 7; pos 8]
         );
       assert_equal
         [neg 1; neg 4; pos 7]
-        (diagnose
-          [[neg 4; pos 6]; [neg 1; neg 4; pos 5]]
-          [(4, true); (5, true); (6, true)]
-          [neg 5; neg 6; pos 7]
+        (List.sort comp_literal @@ diagnose
+          [[neg 1; neg 4; pos 5]]
+          [(5, true); (4, true)]
+          [neg 5; neg 6; pos 7] [neg 4; pos 6]
         );
       assert_equal
         [neg 8]
-        (diagnose
-          [[neg 8; neg 9]; [neg 5; neg 6; pos 7]; [neg 1; neg 4; pos 7]; [neg 2; neg 7]]
+        (List.sort comp_literal @@ diagnose
+          [[neg 5; neg 6; pos 7]; [neg 1; neg 4; pos 7]; [neg 2; neg 7]]
           [(8, true); (9, false)]
-          [neg 8; pos 9]
+          [neg 8; pos 9] [neg 8; neg 9]
         );
     )
 ;;

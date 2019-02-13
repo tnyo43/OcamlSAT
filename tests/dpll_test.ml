@@ -110,7 +110,7 @@ let tests =
     apply_assign_test;
     unit_propagation_test;
     next_assign_list_test;
-    solve_sat_test;
     checker_test;
+    solve_sat_test;
   ]
 ;;
