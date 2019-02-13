@@ -165,3 +165,14 @@ let solve cnf1 =
     let result_assigns = List.fold_left (fun lst s -> (s, default_assign)::lst) asgns rests in
     sort_assign result_assigns
 ;;
+
+let checker cnf1 asgns =
+  let checker_sub cla asgns =
+    try
+      let res = List.fold_left (fun cla (s,b) -> update_clause cla s b) cla asgns in
+      res = []
+    with
+    | Unsat -> false
+  in
+  List.fold_left (fun res cla -> res && checker_sub cla asgns) true cnf1
+;;

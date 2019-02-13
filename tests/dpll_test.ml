@@ -58,6 +58,52 @@ let solve_sat_test =
     )
 ;;
 
+let checker_test =
+  "回答がSATを満たすかどうか判定、UNSATISFYの判定はこれではしない" >::
+    (fun _ ->
+      assert_equal true (checker [
+          [neg 1; pos 2; pos 3];
+          [pos 1; pos 3; pos 4];
+          [pos 1; pos 3; neg 4];
+          [pos 1; neg 3; pos 4];
+          [pos 1; neg 3; neg 4];
+          [neg 2; neg 3; pos 4];
+          [neg 1; pos 2; neg 3];
+          [neg 1; neg 2; pos 3];
+          [pos 1; pos 3]
+        ] [(1, true); (2, true); (3, true); (4, true)]);
+      assert_equal false (checker [
+          [neg 1; pos 2; pos 3];
+          [pos 1; pos 3; pos 4];
+          [pos 1; pos 3; neg 4];
+          [pos 1; neg 3; pos 4];
+          [pos 1; neg 3; neg 4];
+          [neg 2; neg 3; pos 4];
+          [neg 1; pos 2; neg 3];
+          [neg 1; neg 2; pos 3];
+          [pos 1; pos 3]
+        ] [(1, false); (2, true); (3, true); (4, true)]);
+      assert_equal true (checker [
+          [neg 1; neg 4; pos 5];
+          [neg 4; pos 6];
+          [neg 5; neg 6; pos 7];
+          [neg 7; pos 8];
+          [neg 2; neg 7; pos 9];
+          [neg 8; neg 9];
+          [neg 8; pos 9]
+        ] [(1, true); (2, true); (4, false); (5, true); (6, false); (7, false); (8, false); (9, false)]);
+      assert_equal true (checker [
+          [neg 1; neg 4; pos 5];
+          [neg 4; pos 6];
+          [neg 5; neg 6; pos 7];
+          [neg 7; pos 8];
+          [neg 2; neg 7; pos 9];
+          [neg 8; neg 9];
+          [neg 8; pos 9]
+        ] [(1, true); (2, true); (4, false); (5, true); (6, false); (7, false); (8, false); (9, true)]);
+    )
+;;
+
 let tests =
   "all_tests" >::: [
     update_clause_test;
@@ -65,5 +111,6 @@ let tests =
     unit_propagation_test;
     next_assign_list_test;
     solve_sat_test;
+    checker_test;
   ]
 ;;
