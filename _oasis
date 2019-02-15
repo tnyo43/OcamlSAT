@@ -7,18 +7,23 @@ License: MIT
 Plugins: META (0.4), StdFiles (0.4), DevFiles (0.4)
 BuildTools: ocamlbuild
 
+Library sat
+  Path: src/sat
+  Modules: Sat
+
 Library dpll
   Path: src/dpll
   Modules: Dpll
+  BuildDepends: sat
 
 Library cdcl
   Path: src/cdcl
-  BuildDepends: dpll
+  BuildDepends: sat
   Modules: Cdcl
 
 Library sudoku
   Path: src/sudoku
-  BuildDepends: dpll, cdcl
+  BuildDepends: sat
   Modules: Sudoku
 
 Executable test
@@ -27,7 +32,7 @@ Executable test
   Build$: flag(tests)
   CompiledObject: native
   Install: false
-  BuildDepends: oUnit, dpll, cdcl, sudoku
+  BuildDepends: oUnit, dpll, cdcl, sudoku, sat
 
 Test test
   Run$: flag(tests)

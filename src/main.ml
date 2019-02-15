@@ -31,7 +31,7 @@ let trial problem solve_function =
   let t = Sys.time() in
   let asgns = solve_function problem in
   let execution_time = (Sys.time() -. t) in
-  let judge = Dpll.checker problem asgns in
+  let judge = Sat.checker problem asgns in
   let _ = Printf.printf "%f" execution_time in
   judge, execution_time
 ;;

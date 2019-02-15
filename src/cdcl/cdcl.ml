@@ -1,4 +1,4 @@
-open Dpll
+open Sat
 
 type cdcl_clause = clause * clause;;
 type cdcl_cnf = cdcl_clause list;;
@@ -6,48 +6,12 @@ type cdcl_cnf = cdcl_clause list;;
 module LevelMap = Map.Make(IntOrd);;
 
 exception CdclSat of assign list;; (* 最後に呼ばれる *)
-exception Conflict of clause;;
-exception CdclUnitPropagation of (literal * clause);;
-
+exception UnitPropagation of (literal * clause);;
 
 let create_cdcl_cnf cnf1 =
   List.map (fun cnf' -> (cnf',cnf')) cnf1
 ;;
 
-let rec print_list =function 
-[] -> ()
-| e::l -> print_int e ; print_string " " ; print_list l
-
-let rec print_list_list = function
-  [] -> ()
-  | e::l -> print_list e; print_string "\n"; print_list_list l;
-;;
-
-let print_cla_hist_list cla_hist_list =
-  let rec sub list num =
-    match list with
-    | [] -> ()
-    | hd::tl -> print_int num; print_string "~~~ ->\n"; print_list_list hd; sub tl @@ num+1;
-  in
-  sub cla_hist_list 0
-;;
-
-let print_asgn asgn =
-  let (s,b) = asgn in print_int s; print_string @@ ":"^string_of_bool b
-;;
-
-let rec print_asgn_list asgns =
-  match asgns with
-  | [] -> ()
-  | asgn::t -> let _ = print_asgn asgn in let _ = print_string "," in print_asgn_list t
-;;
-
-let print_DB db =
-  print_list_list db
-;;
-
-
-let print_clause cla = print_string "[" ; print_list cla; print_string "]";;
 
 let rec print_cdcl_cnf (cdcl_cnf1 : cdcl_cnf) =
   match cdcl_cnf1 with
@@ -60,17 +24,6 @@ let rec print_cnf_hist (cnf_hist : cdcl_cnf list) =
   | h::t -> let _ = print_cdcl_cnf h in print_cnf_hist t
 ;;
 
-let rec print_cnf cnf1 =
-  match cnf1 with
-  | [] -> print_string "\n"
-  | cla::t -> print_clause cla; print_cnf t
-;;
-
-let rec print_clause_hist_list cla_hist_list =
-  match cla_hist_list with
-  | [] -> ()
-  | h::t -> let _ = print_cnf h in print_clause_hist_list t
-;;
 
 let show_state
         (asgn_level_list : (assign list) list) (* 各レベルで割り当てた結果 *)
@@ -110,7 +63,7 @@ let and_clause cla1 cla2 ignore_list = (* ignore_listに入っている変数は
         else union (h2::t) (h1::res) ignore_list
   in
   let new_clause, new_ignore_list = union lit_list [] ignore_list in
-  if List.length new_clause = 0 then raise Unsat else new_clause, new_ignore_list (* Conflictに変更して、衝突の原因になった項を追加する *)
+  if List.length new_clause = 0 then raise Conflict else new_clause, new_ignore_list (* Conflictに変更して、衝突の原因になった項を追加する *)
 ;;
 
 let apply_assign_to_cnf cnf1 asgn asgn_level_list =
@@ -119,7 +72,7 @@ let apply_assign_to_cnf cnf1 asgn asgn_level_list =
          @@ List.map (fun (cla, original_cla) -> 
                 try
                   update_clause cla s b, original_cla
-                with Unsat -> raise (Conflict original_cla)) cnf1
+                with Conflict -> raise (ConflictClause original_cla)) cnf1
   in
   if List.length res = 0 then raise (CdclSat (asgn :: List.flatten asgn_level_list))
   else res
@@ -131,11 +84,11 @@ let unit_propagation cnf1 =
     let _ = List.iter
               (fun (current_cla, original_cla) ->
                 if List.length current_cla = 1
-                then let lit = List.hd current_cla in raise (CdclUnitPropagation (lit, original_cla))
+                then let lit = List.hd current_cla in raise (UnitPropagation (lit, original_cla))
                 else ())
               cnf1 in
     None
-  with | CdclUnitPropagation res -> Some res
+  with | UnitPropagation res -> Some res
 ;;
 
 let next_assign cnf1 alphs =
@@ -165,7 +118,7 @@ let diagnose (cla_list : clause list) (asgn_level : assign list) conflict_cla ca
 (* 単位伝播でcause clauseが呼ばれてconflict clauseが衝突した *)
   let rec diagnose_sub (cla_list : clause list) (asgns : assign list) (cla : clause) (ignore_list : literal list) =
     if is_valid_clause cla asgn_level 0 then cla
-    else if List.length cla_list = 0 then let _ = print_clause cla in let _ = print_list ignore_list in raise Unsat
+    else if List.length cla_list = 0 then let _ = print_clause cla in let _ = print_list ignore_list in raise Conflict
     else 
       let (s,_) = List.hd asgns in
       if List.mem s cla || List.mem (-s) cla then
@@ -218,12 +171,6 @@ let rec apply_and_update f lst x =
   | h::t -> let y = f x h in y::apply_and_update f t y
 ;;
 
-let rec zip a b =
-  match a, b with
-  | [], _ -> []
-  | _, [] -> []
-  | ha::ta, hb::tb -> (ha,hb) :: zip ta tb
-;;
 
 let update_clause_with_assigns asgn_level_list cla =
   let rev_asgn_list = List.rev asgn_level_list in
@@ -247,15 +194,6 @@ let rec solve_sub
         (clause_db : clause list) (* CNFを構成する項全体 *)
         alphs (* 割り当てられていない変数 *)
         initial_alphs = (* CNFに登場する全ての変数 *)
-  (* cnf_hist、cla_hist_list、asgn_level_listはそれぞれ同じ要素数 *)
-  (*
-  let _ = show_state asgn_level_list
-        cnf_hist 
-        cla_hist_list
-        clause_db 
-        alphs
-        initial_alphs in
-        *)
   let asgn, cla' = next_assign (List.hd cnf_hist) alphs in
   let (s, b) = asgn in
   let next_alphs = List.filter (fun x -> not(x = s)) alphs in
@@ -288,7 +226,7 @@ let rec solve_sub
                           [],
                           initial_alphs,
                           true
-                | Conflict cla2 -> (* 単位伝播した結果失敗 *)
+                | ConflictClause cla2 -> (* 単位伝播した結果失敗 *)
                   if List.length cla_hist_list <= 1 then raise Unsat (* 1つ目の適応でうまくいかないときはだめ *)
                   else
                     let new_clause = diagnose (List.hd cla_hist_list) (List.hd asgn_level_list) cla cla2 in
@@ -339,7 +277,7 @@ let rec solve cnf1 =
   let alphs = SS.elements alph_set in
   let asgns = solve_sub [[]] [create_cdcl_cnf cnf1] [[]] cnf1 alphs alphs (* 要素数がそれぞれ1 *) in
   let rests = SS.elements @@ List.fold_right (fun (s, _) -> SS.remove s) asgns alph_set in
-  let result_assigns = List.fold_left (fun lst s -> (s, default_assign)::lst) asgns rests in  
+  let result_assigns = List.fold_left (fun lst s -> (s, false)::lst) asgns rests in  
   let result = sort_assign result_assigns in
   result
 ;;

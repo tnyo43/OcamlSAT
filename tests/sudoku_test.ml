@@ -1,5 +1,5 @@
 open OUnit2
-open Dpll
+open Sat
 open Sudoku
 
 let alphabet_of_cell_and_num_test =

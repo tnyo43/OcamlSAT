@@ -1,118 +1,7 @@
-type assign = int * bool;;
+open Sat
 
-type literal = int;;
-let pos x = x;;
-let neg x = -x;;
-
-type clause = literal list;;
-type cnf = clause list;;
-
-type alphabets = int list;;
-
-module IntOrd = struct
-  type t = int
-  let compare = Pervasives.compare
-end
-module SS = Set.Make(IntOrd);;
-
-exception Satisfied;;
-exception Unsat;;
 exception UnitPropagation of assign;;
 
-let default_assign = false;;
-
-let get_variable lit = if lit > 0 then lit else -lit;;
-let get_state lit = (lit > 0);;
-
-let comp_int s1 s2 =
-  if s1 = s2 then 0
-  else if s1 > s2 then 1
-  else -1
-;;
-
-let int_of_lit lit =
-  let s = get_variable lit in
-  let b = if get_state lit then 1 else 0 in
-  s*2 + b
-;;
-
-let comp_literal lit1 lit2 =
-  let v1 = int_of_lit lit1 in
-  let v2 = int_of_lit lit2 in
-  if v1 < v2 then -1
-  else if v1 = v2 then 0
-  else 1
-;;
-
-let comp_clause cla1 cla2 =
-  let cla3 = List.sort comp_literal cla1 in
-  let cla4 = List.sort comp_literal cla2 in
-  let rec comp_clause cla1 cla2 =
-    match cla1, cla2 with
-    | h1::t1, h2::t2 ->
-        let res = comp_literal h1 h2 in
-        if res = 0 then comp_clause t1 t2 else res
-    | _::_, [] -> 1
-    | [], _::_ -> -1
-    | [], [] -> 0
-  in comp_clause cla3 cla4
-;;
-
-let comp_cnf cnf1 cnf2 =
-  let cnf3 = List.sort comp_clause cnf1 in
-  let cnf4 = List.sort comp_clause cnf2 in
-  let rec comp_cnf cnf1 cnf2 =
-    match cnf1, cnf2 with
-    | h1::t1, h2::t2 ->
-        let res = comp_clause h1 h2 in
-        if res = 0 then comp_cnf t1 t2 else res
-    | _::_, [] -> 1
-    | [], _::_ -> -1
-    | [], [] -> 0
-  in comp_cnf cnf3 cnf4
-;;
-
-let is_different_each_other comp lst =
-  let sorted_list = List.sort comp lst in
-  let rec check lst =
-    match lst with
-    | x::y::t -> if comp x y = 0 then false else check (y::t)
-    | _ -> true
-  in
-  check sorted_list
-;;
-
-
-let make_alph_set cnf1 =
-  let add_set cla set = List.fold_right (fun lit -> SS.add @@ get_variable lit) cla set in
-  List.fold_right (fun cla -> add_set cla) cnf1 SS.empty
-;;
-
-let sort_assign asgns =
-  List.sort (fun asgn1 asgn2 ->
-    match (asgn1, asgn2) with
-    | (x, _), (y, _) -> if x > y then 1 else if x = y then 0 else (-1)) asgns
-;;
-
-let update_clause cla s b =
-    if List.length cla = 1
-    then
-      let lit = List.hd cla in
-      if get_variable lit = s
-      then
-        if get_state lit = b then [] else raise Unsat
-      else cla
-    else
-    let rec check cla res =
-      match cla with
-      | [] -> List.rev res
-      | lit::cla' ->
-            if get_variable lit = s then
-              if get_state lit = b then [] else check cla' res
-            else check cla' @@ lit::res
-    in
-    check cla []
-;;
 
 let apply_assign cnf1 asgn =
   let (s, b) = asgn in
@@ -165,7 +54,7 @@ let rec solve_sub
         let next_asgn_level_hist = ((a, asgn)::List.hd new_asgn_level_hist) :: List.tl new_asgn_level_hist in
         new_cnf::List.tl new_cnf_hist, next_asgn_level_hist, new_candidate, None, None
       with
-      | Unsat -> begin
+      | Conflict -> begin
           match new_candidate with
           | [] -> raise Unsat (* 他の割り当てのしようがない *)
           | next_asgn::next_candidates ->
@@ -186,17 +75,6 @@ let solve cnf1 =
   let alph_set = make_alph_set cnf1 in
   let asgns = solve_sub [[]] [] [cnf1] None in
   let rests = SS.elements @@ List.fold_right (fun (s, _) -> SS.remove s) asgns alph_set in
-  let result_assigns = List.fold_left (fun lst s -> (s, default_assign)::lst) asgns rests in
+  let result_assigns = List.fold_left (fun lst s -> (s, false)::lst) asgns rests in
   sort_assign result_assigns
-;;
-
-let checker cnf1 asgns =
-  let checker_sub cla asgns =
-    try
-      let res = List.fold_left (fun cla (s,b) -> update_clause cla s b) cla asgns in
-      res = []
-    with
-    | Unsat -> false
-  in
-  List.fold_left (fun res cla -> res && checker_sub cla asgns) true cnf1
 ;;

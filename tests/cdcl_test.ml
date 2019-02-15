@@ -1,5 +1,5 @@
 open OUnit2
-open Dpll
+open Sat
 open Cdcl
 
 let and_clause_tester cla1 cla2 ignore_list =
@@ -14,7 +14,7 @@ let and_clause_test =
       assert_equal ([pos 1; neg 2; pos 3; neg 4], []) (and_clause_tester [pos 1; neg 2; pos 3] [pos 3; neg 4] []);
       assert_equal ([pos 1; pos 3; neg 4], [2]) (and_clause_tester [pos 1; neg 2; pos 3] [pos 2; pos 3; neg 4] []);
       assert_equal ([pos 1], [2;3;4]) (and_clause_tester [pos 1] [pos 2; pos 3; neg 4] [2;3;4]);
-      assert_raises Unsat (fun _ -> and_clause_tester [pos 1] [neg 1] []);
+      assert_raises Conflict (fun _ -> and_clause_tester [pos 1] [neg 1] []);
     )
 ;;
 
@@ -82,7 +82,7 @@ let solve_sub_test =
           ([neg 1; neg 2], [neg 1; neg 2])
         ]][[]] [[pos 1; neg 2]; [neg 1; neg 2]] [1; 2] [1; 2]
       );
-      assert_raises Unsat 
+      assert_raises Unsat
       (fun _ -> solve_sub [[]]
         [[
           ([pos 1], [pos 1]);

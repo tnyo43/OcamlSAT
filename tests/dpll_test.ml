@@ -1,4 +1,5 @@
 open OUnit2
+open Sat
 open Dpll
 
 let update_clause_test =
@@ -17,7 +18,7 @@ let apply_assign_test =
       assert_equal [[neg 1; pos 2]] (apply_assign [[neg 1; pos 2; neg 3]] (3, true));
       assert_raises Satisfied (fun _ -> apply_assign [[neg 1; pos 2; neg 3]] (3, false));
       assert_equal [[pos 1; pos 2]] (apply_assign [[neg 1; neg 2; pos 3]; [pos 1; pos 2; neg 3]] (3, true));
-      assert_raises Unsat (fun _ -> apply_assign [[pos 1]] (1, false));
+      assert_raises Conflict (fun _ -> apply_assign [[pos 1]] (1, false));
     )
 ;;
 
@@ -55,7 +56,7 @@ let solve_sat_test =
           [pos 1; pos 3]
         ] in
       assert_equal true (checker cnf2 @@ solve cnf2);
-      assert_raises (Unsat) (fun _ -> solve [[neg 1]; [pos 1]])
+      assert_raises Unsat (fun _ -> solve [[neg 1]; [pos 1]])
     )
 ;;
 

@@ -1,5 +1,4 @@
-open Dpll
-open Cdcl
+open Sat
 
 module SudokuCell = Map.Make(IntOrd);;
 

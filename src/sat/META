@@ -1,0 +1,11 @@
+# OASIS_START
+# DO NOT EDIT (digest: 11f0e95696a0fa69ce1171d6fa679bf9)
+version = "0.1.0"
+description = "SAT solver"
+archive(byte) = "sat.cma"
+archive(byte, plugin) = "sat.cma"
+archive(native) = "sat.cmxa"
+archive(native, plugin) = "sat.cmxs"
+exists_if = "sat.cma"
+# OASIS_STOP
+

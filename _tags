@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 2f853879e3eefd36056fe0d0802793ff)
+# DO NOT EDIT (digest: e405091c068bb732b7a964b6d3d4f1b0)
 # Ignore VCS directories, you can use the same kind of rule outside
 # OASIS_START/STOP if you want to exclude directories that contains
 # useless stuff for the build process
@@ -14,22 +14,26 @@ true: annot, bin_annot
 ".git": not_hygienic
 "_darcs": -traverse
 "_darcs": not_hygienic
+# Library sat
+"src/sat/sat.cmxs": use_sat
 # Library dpll
 "src/dpll/dpll.cmxs": use_dpll
+<src/dpll/*.ml{,i,y}>: use_sat
 # Library cdcl
 "src/cdcl/cdcl.cmxs": use_cdcl
-<src/cdcl/*.ml{,i,y}>: use_dpll
+<src/cdcl/*.ml{,i,y}>: use_sat
 # Library sudoku
 "src/sudoku/sudoku.cmxs": use_sudoku
-<src/sudoku/*.ml{,i,y}>: use_cdcl
-<src/sudoku/*.ml{,i,y}>: use_dpll
+<src/sudoku/*.ml{,i,y}>: use_sat
 # Executable test
 "tests/test.native": pkg_oUnit
 "tests/test.native": use_cdcl
 "tests/test.native": use_dpll
+"tests/test.native": use_sat
 "tests/test.native": use_sudoku
 <tests/*.ml{,i,y}>: pkg_oUnit
 <tests/*.ml{,i,y}>: use_cdcl
 <tests/*.ml{,i,y}>: use_dpll
+<tests/*.ml{,i,y}>: use_sat
 <tests/*.ml{,i,y}>: use_sudoku
 # OASIS_STOP
