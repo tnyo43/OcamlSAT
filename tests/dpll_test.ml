@@ -15,7 +15,7 @@ let apply_assign_test =
   "割り当てを適用した時の結果を得る。割り当てられない時はexceptionを返す。充足できれば充足する割り当てを返す" >::
     (fun _ ->
       assert_equal [[neg 1; pos 2]] (apply_assign [[neg 1; pos 2; neg 3]] (3, true));
-      assert_raises Sat (fun _ -> apply_assign [[neg 1; pos 2; neg 3]] (3, false));
+      assert_raises Satisfied (fun _ -> apply_assign [[neg 1; pos 2; neg 3]] (3, false));
       assert_equal [[pos 1; pos 2]] (apply_assign [[neg 1; neg 2; pos 3]; [pos 1; pos 2; neg 3]] (3, true));
       assert_raises Unsat (fun _ -> apply_assign [[pos 1]] (1, false));
     )

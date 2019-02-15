@@ -17,7 +17,6 @@ module SS = Set.Make(IntOrd);;
 
 exception Satisfied;;
 exception Unsat;;
-exception Sat
 exception UnitPropagation of assign;;
 
 let default_assign = false;;
@@ -96,28 +95,29 @@ let sort_assign asgns =
 ;;
 
 let update_clause cla s b =
-  try
     if List.length cla = 1
     then
       let lit = List.hd cla in
       if get_variable lit = s
       then
-        if get_state lit = b then raise Satisfied else raise Unsat
+        if get_state lit = b then [] else raise Unsat
       else cla
-    else List.fold_right
-            (fun lit res ->
-                if get_variable lit = s
-                then
-                  if get_state lit = b then raise Satisfied else res
-                else lit :: res)
-            cla []
-  with | Satisfied -> []
+    else
+    let rec check cla res =
+      match cla with
+      | [] -> List.rev res
+      | lit::cla' ->
+            if get_variable lit = s then
+              if get_state lit = b then [] else check cla' res
+            else check cla' @@ lit::res
+    in
+    check cla []
 ;;
 
 let apply_assign cnf1 asgn =
   let (s, b) = asgn in
   let res = List.filter (fun cla -> List.length cla > 0) @@ List.map (fun cla -> update_clause cla s b) cnf1 in
-  if res = [] then raise Sat
+  if res = [] then raise Satisfied
   else res
 ;;
 
@@ -175,7 +175,7 @@ let rec solve_sub
               None,
               Some next_asgn
         end
-      | Sat -> [], [], [], Some((a, asgn)::List.flatten asgn_level_hist), None
+      | Satisfied -> [], [], [], Some((a, asgn)::List.flatten asgn_level_hist), None
     end in
   match sat with
   | Some res -> res
