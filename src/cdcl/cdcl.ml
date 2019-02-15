@@ -29,9 +29,7 @@ let show_state
         (asgn_level_list : (assign list) list) (* 各レベルで割り当てた結果 *)
         (cnf_hist : cdcl_cnf list) (* 各レベルでまだ解決していないCNFの残り *)
         (cla_hist_list : (clause list) list) (* 各レベルで使用した項のリスト *)
-        (clause_db : clause list) (* CNFを構成する項全体 *)
-        alphs (* 割り当てられていない変数 *)
-        initial_alphs = (* CNFに登場する全ての変数 *)
+        (clause_db : clause list) (* CNFを構成する項全体 *) =
     let _ = print_string "\n       ==== state ===\n" in
     let _ = print_string "===== assign level list ====\n" in
     let _ = List.iter (fun x -> print_asgn_list x; print_string "\n") asgn_level_list in
@@ -41,10 +39,6 @@ let show_state
     let _ = print_clause_hist_list cla_hist_list in
     let _ = print_string "======== clause DB =========\n" in
     let _ = print_DB clause_db in
-    let _ = print_string "===== remain variable ======\n" in
-    let _ = print_list alphs in
-    let _ = print_string "\n===== initial variable =====\n" in
-    let _ = print_list initial_alphs in
     let _ = print_string "\n============================\n" in
         ()
 ;;
@@ -91,10 +85,10 @@ let unit_propagation cnf1 =
   with | UnitPropagation res -> Some res
 ;;
 
-let next_assign cnf1 alphs =
+let next_assign cnf1 =
   match unit_propagation cnf1 with
   | Some (lit, cla) -> let a = get_variable lit in (a, get_state lit), Some cla
-  | None -> let a = List.hd alphs in (a, true), None
+  | None -> match List.hd cnf1 with cla, _ -> let a = get_variable @@ List.hd cla in (a, true), None
 ;;
 
 let add_in_same_level obj_level_list obj =
@@ -160,10 +154,6 @@ let rec back_to_level level lst =
   else back_to_level level @@ List.tl lst
 ;;
 
-let eliminate_used_alph all_alphs used_alphs =
-  List.filter (fun x -> not (List.mem x used_alphs)) all_alphs
-;;
-
 
 let rec apply_and_update f lst x =
   match lst with
@@ -191,12 +181,9 @@ let rec solve_sub
         (asgn_level_list : (assign list) list) (* 各レベルで割り当てた結果 *)
         (cnf_hist : cdcl_cnf list) (* 各レベルでまだ解決していないCNFの残り *)
         (cla_hist_list : (clause list) list) (* 各レベルで使用した項のリスト *)
-        (clause_db : clause list) (* CNFを構成する項全体 *)
-        alphs (* 割り当てられていない変数 *)
-        initial_alphs = (* CNFに登場する全ての変数 *)
-  let asgn, cla' = next_assign (List.hd cnf_hist) alphs in
+        (clause_db : clause list) (* CNFを構成する項全体 *) =
+  let asgn, cla' = next_assign (List.hd cnf_hist) in
   let (s, b) = asgn in
-  let next_alphs = List.filter (fun x -> not(x = s)) alphs in
   match cla' with
   | Some cla -> (* 単位伝播 *)
     begin
@@ -204,7 +191,6 @@ let rec solve_sub
           new_cnf_hist,
           new_cla_hist_list,
           new_clause_db,
-          new_next_alph,
           sat = begin
               (* 要素数をそれぞれNとする(N >= 1) *)
                 try
@@ -216,7 +202,6 @@ let rec solve_sub
                     new_cnf_hist,
                     new_cla_hist_list,
                     clause_db,
-                    next_alphs,
                     false)
                 with
                 | CdclSat asgn_list ->
@@ -224,7 +209,6 @@ let rec solve_sub
                           [[]],
                           [[]],
                           [],
-                          initial_alphs,
                           true
                 | ConflictClause cla2 -> (* 単位伝播した結果失敗 *)
                   if List.length cla_hist_list <= 1 then raise Unsat (* 1つ目の適応でうまくいかないときはだめ *)
@@ -237,24 +221,21 @@ let rec solve_sub
                           [create_cdcl_cnf new_clause_db],
                           [[]],
                           new_clause_db,
-                          initial_alphs,
                           false (* それぞれ長さ1 *)
                     else
                       let new_asgn_level_list = back_to_level level asgn_level_list in
                       let new_cnf_hist = add_clause_every_level new_asgn_level_list new_clause @@ back_to_level level cnf_hist in (* CNFに新しい項を追加する *)
-                      let new_next_alph = eliminate_used_alph initial_alphs @@ List.map (fun (s, b) -> s) @@ List.flatten new_asgn_level_list in
                       let new_cla_hist_list = back_to_level level cla_hist_list in (* それぞれ同じ数だけ戻った *)
                           new_asgn_level_list,
                           new_cnf_hist,
                           new_cla_hist_list,
                           new_clause_db,
-                          new_next_alph,
                           false
 
           end
       in
       if sat then sort_assign @@ List.flatten new_asgn_level_list
-      else solve_sub new_asgn_level_list new_cnf_hist new_cla_hist_list new_clause_db new_next_alph initial_alphs
+      else solve_sub new_asgn_level_list new_cnf_hist new_cla_hist_list new_clause_db
 
     end
   | None -> (* 決め打ちの代入、レベルが一つ進む *)
@@ -269,13 +250,12 @@ let rec solve_sub
     | None -> 
       let new_cla_hist_list = List.hd cla_hist_list::cla_hist_list in
       let new_asgn_level_list = add_in_next_level asgn_level_list asgn in
-      solve_sub new_asgn_level_list new_cnf_hist new_cla_hist_list clause_db next_alphs initial_alphs
+      solve_sub new_asgn_level_list new_cnf_hist new_cla_hist_list clause_db
 ;;
 
 let rec solve cnf1 = 
   let alph_set = make_alph_set cnf1 in
-  let alphs = SS.elements alph_set in
-  let asgns = solve_sub [[]] [create_cdcl_cnf cnf1] [[]] cnf1 alphs alphs (* 要素数がそれぞれ1 *) in
+  let asgns = solve_sub [[]] [create_cdcl_cnf cnf1] [[]] cnf1 (* 要素数がそれぞれ1 *) in
   let rests = SS.elements @@ List.fold_right (fun (s, _) -> SS.remove s) asgns alph_set in
   let result_assigns = List.fold_left (fun lst s -> (s, false)::lst) asgns rests in  
   let result = sort_assign result_assigns in

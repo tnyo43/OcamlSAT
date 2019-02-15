@@ -30,8 +30,8 @@ let unit_propagation_test =
 let next_assign_test =
   "CNFから次の割り当てを決定。単位伝播があるならそれと割り当ての根拠になった項、ないなら適当に真を当てる" >::
     (fun _ ->
-      assert_equal ((2, false), Some [neg 2; pos 3]) (next_assign [([neg 2], [neg 2; pos 3]); ([neg 1; pos 2],[neg 1; pos 2])] [1; 2]);
-      assert_equal ((1, true), None) (next_assign [([pos 1; neg 2],[pos 1; neg 2]); ([neg 1; pos 2],[neg 1; pos 2])] [1; 2]);
+      assert_equal ((2, false), Some [neg 2; pos 3]) (next_assign [([neg 2], [neg 2; pos 3]); ([neg 1; pos 2],[neg 1; pos 2])]);
+      assert_equal ((1, true), None) (next_assign [([pos 1; neg 2],[pos 1; neg 2]); ([neg 1; pos 2],[neg 1; pos 2])]);
     )
 ;;
 
@@ -74,20 +74,20 @@ let check_level_test =
 let solve_sub_test =
   "solveのサブ関数のテスト" >::
     (fun _ ->
-      assert_equal [(1, true)] (solve_sub [[]] [[([pos 1], [pos 1])]] [[]] [[pos 1]] [1] [1]);
+      assert_equal [(1, true)] (solve_sub [[]] [[([pos 1], [pos 1])]] [[]] [[pos 1]]);
       assert_equal [(1, true); (2, false)]
       (solve_sub [[]]
         [[
           ([pos 1; neg 2], [pos 1; neg 2]);
           ([neg 1; neg 2], [neg 1; neg 2])
-        ]][[]] [[pos 1; neg 2]; [neg 1; neg 2]] [1; 2] [1; 2]
+        ]][[]] [[pos 1; neg 2]; [neg 1; neg 2]]
       );
       assert_raises Unsat
       (fun _ -> solve_sub [[]]
         [[
           ([pos 1], [pos 1]);
           ([neg 1], [neg 1])
-        ]] [[]] [[pos 1]; [neg 1]] [1] [1]
+        ]] [[]] [[pos 1]; [neg 1]]
       );
     )
 ;;
@@ -95,11 +95,10 @@ let solve_sub_test =
 let solve_test =
   "最終テスト" >::
   (fun _ ->
-    assert_equal [(1, true)] (solve [[pos 1]]);
-    assert_equal [(1, true); (2, false)] (solve [[pos 1; neg 2]; [neg 1; neg 2]]);
-    assert_raises Unsat (fun _ -> solve [[pos 1]; [neg 1]]);
-    assert_equal [(1, true); (2, true); (3, true); (4, true)]
-        (solve [
+    let cnf1 = [[pos 1]] in
+    let cnf2 = [[pos 1; neg 2]; [neg 1; neg 2]] in
+    let cnf3 = [[pos 1]; [neg 1]] in
+    let cnf4 = [
           [neg 1; pos 2; pos 3];
           [pos 1; pos 3; pos 4];
           [pos 1; pos 3; neg 4];
@@ -109,9 +108,8 @@ let solve_test =
           [neg 1; pos 2; neg 3];
           [neg 1; neg 2; pos 3];
           [pos 1; pos 3]
-        ]);
-    assert_equal [(1, true); (2, true); (4, false); (5, true); (6, false); (7, false); (8, false); (9, false)]
-        (solve [
+        ] in
+    let cnf5 = [
           [neg 1; neg 4; pos 5];
           [neg 4; pos 6];
           [neg 5; neg 6; pos 7];
@@ -119,7 +117,12 @@ let solve_test =
           [neg 2; neg 7; pos 9];
           [neg 8; neg 9];
           [neg 8; pos 9]
-        ])
+        ] in
+    assert_equal true  (Sat.checker cnf1 @@ solve cnf1);
+    assert_equal true  (Sat.checker cnf2 @@ solve cnf2);
+    assert_raises Unsat (fun _ -> solve cnf3);
+    assert_equal true  (Sat.checker cnf4 @@ solve cnf4);
+    assert_equal true  (Sat.checker cnf5 @@ solve cnf5);
   )
 ;;
 
