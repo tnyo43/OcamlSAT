@@ -121,9 +121,6 @@ let apply_assign cnf1 asgn =
   else res
 ;;
 
-let asgn_pos = 2;;
-let asgn_neg = 1;;
-
 let unit_propagation cnf1 =
   try
     let _ = List.iter
@@ -136,10 +133,11 @@ let unit_propagation cnf1 =
   with | UnitPropagation res -> Some res
 ;;
 
-let next_assign_candidate (cnf1 : cnf) alphs =
+let next_assign_candidate cnf1 =
   match unit_propagation cnf1 with
   | Some (s, b) -> s, b, false
-  | None -> List.hd alphs, false, true
+  | None -> let lit = List.hd @@ List.hd cnf1 in
+        get_variable lit, get_state lit,  true
 ;;
 
 (* 単位伝搬の時は同じレベルで計算をする
@@ -149,11 +147,10 @@ let rec solve_sub
       asgn_level_hist
       asgn_candidates
       cnf_hist
-      alphs
       next_asgn =
   let a, asgn, is_decision =
     match next_asgn with
-    | None -> next_assign_candidate (List.hd cnf_hist) alphs
+    | None -> next_assign_candidate (List.hd cnf_hist)
     | Some (a, asgn) -> a, asgn, false
   in
   let new_candidate, new_cnf_hist, new_asgn_level_hist =
@@ -161,36 +158,33 @@ let rec solve_sub
       then (a, not asgn)::asgn_candidates, (List.hd cnf_hist)::cnf_hist, []::asgn_level_hist
       else asgn_candidates, cnf_hist, asgn_level_hist
   in
-  let next_cnf_hist, next_alphs, next_asgn_level_hist, next_candidate, sat, next_asgn  =
+  let next_cnf_hist, next_asgn_level_hist, next_candidate, sat, next_asgn  =
     begin
       try
         let new_cnf : cnf = apply_assign (List.hd new_cnf_hist) (a, asgn) in
         let next_asgn_level_hist = ((a, asgn)::List.hd new_asgn_level_hist) :: List.tl new_asgn_level_hist in
-        let next_alphs = List.filter (fun x -> not (x = a)) alphs in
-        new_cnf::List.tl new_cnf_hist, next_alphs, next_asgn_level_hist, new_candidate, None, None
+        new_cnf::List.tl new_cnf_hist, next_asgn_level_hist, new_candidate, None, None
       with
       | Unsat -> begin
           match new_candidate with
           | [] -> raise Unsat (* 他の割り当てのしようがない *)
           | next_asgn::next_candidates ->
               List.tl cnf_hist,
-              List.map (fun (a, b) -> a) (List.hd asgn_level_hist) @ alphs,
               List.tl asgn_level_hist,
               next_candidates,
               None,
               Some next_asgn
         end
-      | Sat -> [], [], [], [], Some((a, asgn)::List.flatten asgn_level_hist), None
+      | Sat -> [], [], [], Some((a, asgn)::List.flatten asgn_level_hist), None
     end in
   match sat with
   | Some res -> res
-  | None -> solve_sub next_asgn_level_hist next_candidate next_cnf_hist next_alphs next_asgn
+  | None -> solve_sub next_asgn_level_hist next_candidate next_cnf_hist next_asgn
 ;;
 
 let solve cnf1 =
   let alph_set = make_alph_set cnf1 in
-  let alphs = SS.elements alph_set in
-  let asgns = solve_sub [[]] [] [cnf1] alphs None in
+  let asgns = solve_sub [[]] [] [cnf1] None in
   let rests = SS.elements @@ List.fold_right (fun (s, _) -> SS.remove s) asgns alph_set in
   let result_assigns = List.fold_left (fun lst s -> (s, default_assign)::lst) asgns rests in
   sort_assign result_assigns

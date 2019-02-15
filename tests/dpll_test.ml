@@ -30,21 +30,20 @@ let unit_propagation_test =
     )
 
 let next_assign_candidate_test =
-  "次の割り当てが単位伝搬なら、それとfalseを返す。割り当てなら'変数','仮の割り当て(false)', 'true'を返す" >::
+  "次の割り当てが単位伝搬なら、それとfalseを返す。割り当てなら'変数','仮の割り当て(cnfの最初の項を満たすような)', 'true'を返す" >::
     (fun _ ->
-      assert_equal (2, false, false) (next_assign_candidate [[neg 2]; [neg 1; pos 2]] [1; 2]);
-      assert_equal (1, false, true) (next_assign_candidate [[pos 1; neg 2]; [neg 1; pos 2]] [1; 2]);
-      assert_equal (3, true, false) (next_assign_candidate [[pos 3]; [neg 1; pos 2; neg 3]] [1; 2; 3]);
+      assert_equal (2, false, false) (next_assign_candidate [[neg 2]; [neg 1; pos 2]]);
+      assert_equal (1, true, true) (next_assign_candidate [[pos 1; neg 2]; [neg 1; pos 2]]);
+      assert_equal (3, true, false) (next_assign_candidate [[pos 3]; [neg 1; pos 2; neg 3]]);
     )
 ;;
 
 let solve_sat_test =
   "SATのテスト。成功すると割り当てのリストを返し、失敗するとUnsatになる" >::
     (fun _ ->
-      assert_equal [(1, false); (2, true); (3, true); (4, false)] (solve [[pos 1; pos 2]; [neg 1; neg 2]; [pos 3; pos 4]; [pos 3; neg 4]]);
-      assert_equal
-        [(1, true); (2, true); (3, true); (4, true)]
-        (solve [
+      let cnf1 = [[pos 1; pos 2]; [neg 1; neg 2]; [pos 3; pos 4]; [pos 3; neg 4]] in
+      assert_equal true (checker cnf1 @@ solve cnf1);
+      let cnf2 = [
           [neg 1; pos 2; pos 3];
           [pos 1; pos 3; pos 4];
           [pos 1; pos 3; neg 4];
@@ -54,7 +53,8 @@ let solve_sat_test =
           [neg 1; pos 2; neg 3];
           [neg 1; neg 2; pos 3];
           [pos 1; pos 3]
-        ]);
+        ] in
+      assert_equal true (checker cnf2 @@ solve cnf2);
       assert_raises (Unsat) (fun _ -> solve [[neg 1]; [pos 1]])
     )
 ;;
