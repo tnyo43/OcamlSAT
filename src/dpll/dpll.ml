@@ -17,7 +17,7 @@ module SS = Set.Make(IntOrd);;
 
 exception Satisfied;;
 exception Unsat;;
-exception Sat of assign list;;
+exception Sat
 exception UnitPropagation of assign;;
 
 let default_assign = false;;
@@ -114,10 +114,10 @@ let update_clause cla s b =
   with | Satisfied -> []
 ;;
 
-let apply_assign cnf1 asgn asgns =
+let apply_assign cnf1 asgn =
   let (s, b) = asgn in
   let res = List.filter (fun cla -> List.length cla > 0) @@ List.map (fun cla -> update_clause cla s b) cnf1 in
-  if res = [] then raise (Sat (asgn :: asgns))
+  if res = [] then raise Sat
   else res
 ;;
 
@@ -136,34 +136,64 @@ let unit_propagation cnf1 =
   with | UnitPropagation res -> Some res
 ;;
 
-let next_assign_list cnf1 alphs =
+let next_assign_candidate (cnf1 : cnf) alphs =
   match unit_propagation cnf1 with
-  | Some (s, b) -> (s, [(s, b)])
-  | None -> (List.hd alphs, [(List.hd alphs, false); (List.hd alphs, true)])
+  | Some (s, b) -> s, b, false
+  | None -> List.hd alphs, false, true
+;;
+
+(* 単位伝搬の時は同じレベルで計算をする
+ * 決め打ちの時はレベルを一つあげて計算する
+ * 矛盾が生じた時は *)
+let rec solve_sub
+      asgn_level_hist
+      asgn_candidates
+      cnf_hist
+      alphs
+      next_asgn =
+  let a, asgn, is_decision =
+    match next_asgn with
+    | None -> next_assign_candidate (List.hd cnf_hist) alphs
+    | Some (a, asgn) -> a, asgn, false
+  in
+  let new_candidate, new_cnf_hist, new_asgn_level_hist =
+      if is_decision (* 決め打ちで決めたならレベルがひとつ上がる *)
+      then (a, not asgn)::asgn_candidates, (List.hd cnf_hist)::cnf_hist, []::asgn_level_hist
+      else asgn_candidates, cnf_hist, asgn_level_hist
+  in
+  let next_cnf_hist, next_alphs, next_asgn_level_hist, next_candidate, sat, next_asgn  =
+    begin
+      try
+        let new_cnf : cnf = apply_assign (List.hd new_cnf_hist) (a, asgn) in
+        let next_asgn_level_hist = ((a, asgn)::List.hd new_asgn_level_hist) :: List.tl new_asgn_level_hist in
+        let next_alphs = List.filter (fun x -> not (x = a)) alphs in
+        new_cnf::List.tl new_cnf_hist, next_alphs, next_asgn_level_hist, new_candidate, None, None
+      with
+      | Unsat -> begin
+          match new_candidate with
+          | [] -> raise Unsat (* 他の割り当てのしようがない *)
+          | next_asgn::next_candidates ->
+              List.tl cnf_hist,
+              List.map (fun (a, b) -> a) (List.hd asgn_level_hist) @ alphs,
+              List.tl asgn_level_hist,
+              next_candidates,
+              None,
+              Some next_asgn
+        end
+      | Sat -> [], [], [], [], Some((a, asgn)::List.flatten asgn_level_hist), None
+    end in
+  match sat with
+  | Some res -> res
+  | None -> solve_sub next_asgn_level_hist next_candidate next_cnf_hist next_alphs next_asgn
 ;;
 
 let solve cnf1 =
-  let rec solve cnf1 alphs asgns =
-    let (a, next_assigns) = next_assign_list cnf1 alphs in
-    let next_alphs = List.filter (fun x -> not(x = a)) alphs in
-    let rec try_asgn next_assigns =
-      match next_assigns with
-      | [] -> raise Unsat
-      | asgn::tl ->
-          try
-            let cnf2 = apply_assign cnf1 asgn asgns in
-            let _ = solve cnf2 next_alphs (asgn::asgns) in []
-          with Unsat -> try_asgn tl
-    in
-    try_asgn next_assigns
-  in
   let alph_set = make_alph_set cnf1 in
   let alphs = SS.elements alph_set in
-  try let _ = solve cnf1 alphs [] in raise Unsat
-  with Sat asgns -> 
-    let rests = SS.elements @@ List.fold_right (fun (s, _) -> SS.remove s) asgns alph_set in
-    let result_assigns = List.fold_left (fun lst s -> (s, default_assign)::lst) asgns rests in
-    sort_assign result_assigns
+  let asgns = solve_sub [[]] [] [cnf1] alphs None in
+  let rests = SS.elements @@ List.fold_right (fun (s, _) -> SS.remove s) asgns alph_set in
+  let result_assigns = List.fold_left (fun lst s -> (s, default_assign)::lst) asgns rests in
+  sort_assign result_assigns
 ;;
 
 let checker cnf1 asgns =

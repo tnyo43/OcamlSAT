@@ -14,10 +14,10 @@ let update_clause_test =
 let apply_assign_test =
   "割り当てを適用した時の結果を得る。割り当てられない時はexceptionを返す。充足できれば充足する割り当てを返す" >::
     (fun _ ->
-      assert_equal [[neg 1; pos 2]] (apply_assign [[neg 1; pos 2; neg 3]] (3, true) []);
-      assert_raises (Sat [(3, false); (4, false); (5, true)]) (fun _ -> apply_assign [[neg 1; pos 2; neg 3]] (3, false) [(4, false); (5, true)]);
-      assert_equal [[pos 1; pos 2]] (apply_assign [[neg 1; neg 2; pos 3]; [pos 1; pos 2; neg 3]] (3, true) []);
-      assert_raises (Unsat) (fun _ -> apply_assign [[pos 1]] (1, false) []);
+      assert_equal [[neg 1; pos 2]] (apply_assign [[neg 1; pos 2; neg 3]] (3, true));
+      assert_raises Sat (fun _ -> apply_assign [[neg 1; pos 2; neg 3]] (3, false));
+      assert_equal [[pos 1; pos 2]] (apply_assign [[neg 1; neg 2; pos 3]; [pos 1; pos 2; neg 3]] (3, true));
+      assert_raises Unsat (fun _ -> apply_assign [[pos 1]] (1, false));
     )
 ;;
 
@@ -29,11 +29,12 @@ let unit_propagation_test =
       assert_equal None (unit_propagation [[neg 1; pos 2]; [neg 1; neg 2]]);
     )
 
-let next_assign_list_test =
-  "単位伝播がある時はそれを次の割り当てとする。そうでない時は最初のアルファベットとする" >::
+let next_assign_candidate_test =
+  "次の割り当てが単位伝搬なら、それとfalseを返す。割り当てなら'変数','仮の割り当て(false)', 'true'を返す" >::
     (fun _ ->
-      assert_equal (2, [(2, false)]) (next_assign_list [[neg 2]; [neg 1; pos 2]] [1; 2]);
-      assert_equal (1, [(1, false); (1, true)]) (next_assign_list [[pos 1; neg 2]; [neg 1; pos 2]] [1; 2]);
+      assert_equal (2, false, false) (next_assign_candidate [[neg 2]; [neg 1; pos 2]] [1; 2]);
+      assert_equal (1, false, true) (next_assign_candidate [[pos 1; neg 2]; [neg 1; pos 2]] [1; 2]);
+      assert_equal (3, true, false) (next_assign_candidate [[pos 3]; [neg 1; pos 2; neg 3]] [1; 2; 3]);
     )
 ;;
 
@@ -109,7 +110,7 @@ let tests =
     update_clause_test;
     apply_assign_test;
     unit_propagation_test;
-    next_assign_list_test;
+    next_assign_candidate_test;
     checker_test;
     solve_sat_test;
   ]
